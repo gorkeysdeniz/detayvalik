@@ -5,23 +5,77 @@ import calendar
 import os
 import urllib.parse
 
-# --- 1. AYARLAR VE STİL ---
-st.set_page_config(page_title="Detayvalık Villa Paneli", layout="centered")
+# --- 1. GLOBAL PREMIUM TASARIM (CSS) ---
+st.set_page_config(page_title="Detayvalık Premium Asistan", layout="centered")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #ffffff !important; }
-    h1, h2, h3, label, p, span, div, td, th { color: #000000 !important; -webkit-text-fill-color: #000000 !important; font-weight: 600 !important; }
-    .rez-card { background: #ffffff !important; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left: 8px solid #2ECC71; margin-bottom: 15px; }
-    .guest-card { background: #f8f9fa; padding: 20px; border-radius: 15px; border-left: 10px solid #FFC107; margin-bottom: 15px; }
-    .wa-button { display: block; background-color: #25D366; color: white !important; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center; }
-    .modern-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
-    .day-link { display: block; text-decoration: none; padding: 10px 0; border-radius: 10px; font-weight: bold; color: white !important; text-align: center; }
-    .bos { background: #2ECC71 !important; } .dolu { background: #E74C3C !important; }
+    /* Global Arka Plan (Yumuşak Fildişi) */
+    .stApp { background-color: #FEFEF7 !important; }
+    
+    /* Global Yazı Rengi ve Kalınlık (Koyu Füme) */
+    h1, h2, h3, h4, h5, h6, label, p, span, div, td, th { 
+        color: #2D3436 !important; 
+        -webkit-text-fill-color: #2D3436 !important;
+        font-family: 'Montserrat', sans-serif;
+        font-weight: 600 !important; 
+    }
+    
+    /* SEKMELER TASARIMI (Deniz Turkuazı) */
+    .stTabs [data-baseweb="tab"] { color: #008080 !important; font-weight: bold; border-bottom-color: transparent !important; }
+    .stTabs [data-baseweb="tab"] p { color: #008080 !important; }
+    .stTabs [data-baseweb="tab-list"] { border-bottom: 2px solid #008080 !important; }
+
+    /* MİSAFİR VE GİRİŞ KARTLARI (Deniz Turkuazı Şeritli) */
+    .premium-card, .mode-card {
+        background: #ffffff !important; 
+        padding: 25px; 
+        border-radius: 20px; 
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05); 
+        border-left: 12px solid #008080; 
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
+    }
+    .mode-card:hover { transform: translateY(-5px); cursor: pointer; }
+    .premium-card h3 { color: #008080 !important; margin-bottom: 10px; }
+    
+    /* REZERVASYON VE FİNANS KARTLARI (Altın Şeritli) */
+    .metric-card, .rez-card {
+        background: #ffffff !important; padding: 20px; border-radius: 16px; 
+        box-shadow: 0 6px 15px rgba(0,0,0,0.08); border-left: 10px solid #DAA520; margin-bottom: 15px;
+    }
+    .metric-card .label { font-size: 0.9em; color: #666; }
+    .metric-card .value { font-size: 1.8em; color: #DAA520; font-weight: bold; }
+
+    /* BUTONLAR TASARIMI (Sıcak Altın) */
+    .stButton button {
+        background-color: #DAA520 !important;
+        color: #ffffff !important;
+        font-weight: bold !important;
+        border-radius: 12px !important;
+        border: none !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        width: 100% !important;
+    }
+    .stButton button:hover { background-color: #B8860B !important; }
+    
+    /* WHATSAPP BUTONU (Doğal Yeşil) */
+    .wa-button { 
+        display: block; background-color: #25D366; color: white !important; 
+        padding: 12px; border-radius: 12px; text-decoration: none; font-weight: bold; text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 10px;
+    }
+
+    /* TAKVİM PREMIUM TASARIMI (Yuvarlak Köşeli Grid) */
+    .modern-table { width: 100%; border-collapse: separate; border-spacing: 6px; }
+    .modern-table th { background-color: #008080; color: white !important; padding: 10px; border-radius: 8px; text-align: center; }
+    .day-link { display: block; text-decoration: none; padding: 14px 0; border-radius: 14px; font-weight: bold; color: white !important; text-align: center; font-size: 1.1em; }
+    .bos { background: #2ECC71 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } 
+    .dolu { background: #E74C3C !important; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. VERİ TABANI YÖNETİMİ ---
+# --- 2. VERİ TABANI ---
 REZ_COLS = ["Tarih", "Ad Soyad", "Tel", "Ucret", "Gece", "Not", "Durum", "Toplam"]
 GID_COLS = ["Tarih", "Kategori", "Aciklama", "Tutar"]
 
@@ -33,75 +87,103 @@ df = load_data("rez.csv", REZ_COLS)
 df_gider = load_data("gider.csv", GID_COLS)
 today_str = datetime.now().strftime("%Y-%m-%d")
 
-# --- 3. GİRİŞ VE MOD KONTROLÜ ---
+# --- 3. MOD KONTROLÜ ---
 if 'user_mode' not in st.session_state: st.session_state.user_mode = None
 if 'admin_auth' not in st.session_state: st.session_state.admin_auth = False
 
-# --- ANA GİRİŞ EKRANI ---
+# --- ANA GİRİŞ EKRANI (PREMIUM KARTLAR) ---
 if st.session_state.user_mode is None:
-    st.title("🏡 Detayvalık Villa Asistanı")
-    st.subheader("Hoş geldiniz! Devam etmek için seçim yapın:")
-    c1, c2 = st.columns(2)
-    if c1.button("🛋️ MİSAFİR GİRİŞİ", use_container_width=True):
-        st.session_state.user_mode = "misafir"
-        st.rerun()
-    if c2.button("🔑 YÖNETİCİ GİRİŞİ", use_container_width=True):
-        st.session_state.user_mode = "yonetici"
-        st.rerun()
+    st.markdown('<h1 style="text-align:center;color:#008080;">🌿 Detayvalık Villa Asistanı</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align:center;margin-bottom:30px;">Hoş geldiniz! Kimliğinizi doğrulayın:</p>', unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown('<div class="mode-card" style="text-align:center;"><h2>🛋️ MİSAFİR</h2><p>Giriş, Wi-Fi, Rehber</p></div>', unsafe_allow_html=True)
+        if st.button("Misafir Olarak Devam Et", use_container_width=True, key="guest_btn"):
+            st.session_state.user_mode = "misafir"
+            st.rerun()
+            
+    with col2:
+        st.markdown('<div class="mode-card" style="border-left-color:#DAA520;text-align:center;"><h2>🔑 YÖNETİCİ</h2><p>Takvim, Finans, Kayıtlar</p></div>', unsafe_allow_html=True)
+        if st.button("Yönetici Girişi Yap", use_container_width=True, key="admin_btn"):
+            st.session_state.user_mode = "yonetici"
+            st.rerun()
 
-# --- 🌟 MİSAFİR MODU ---
+# --- 🌟 MİSAFİR MODU (GÖRSEL KARTLAR) ---
 elif st.session_state.user_mode == "misafir":
-    if st.button("⬅️ Ana Menü"):
+    if st.button("⬅️ Ana Menüye Dön"):
         st.session_state.user_mode = None
         st.rerun()
-    st.title("🌿 Keyifli Konaklamalar!")
+        
+    st.markdown('<h1 style="color:#008080;">🌿 Keyifli Konaklamalar!</h1>', unsafe_allow_html=True)
+    
     m_t1, m_t2, m_t3 = st.tabs(["🏠 EV BİLGİLERİ", "📍 GEZİLECEK YERLER", "📞 İLETİŞİM"])
+    
     with m_t1:
-        st.markdown('<div class="guest-card"><h3>📶 Wi-Fi</h3><b>Ağ:</b> Detayvalik_Villa<br><b>Şifre:</b> ayvalik2026</div>', unsafe_allow_html=True)
-        st.markdown('<div class="guest-card" style="border-left-color: #2196F3;"><h3>⏰ Giriş/Çıkış</h3><b>Giriş:</b> 14:00 | <b>Çıkış:</b> 11:00</div>', unsafe_allow_html=True)
-    with m_t2:
-        st.write("📍 **Cunda Adası:** Sakızlı dondurma ve ara sokaklar.")
-        st.write("📍 **Şeytan Sofrası:** Muhteşem gün batımı.")
-    with m_t3:
-        st.markdown('<a href="https://wa.me/905330000000" class="wa-button">💬 WhatsApp Destek</a>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="premium-card">
+            <h3>📶 Wi-Fi Bilgileri</h3>
+            <b>Ağ:</b> Detayvalik_Villa<br>
+            <b>Şifre:</b> ayvalik2026
+        </div>
+        <div class="premium-card" style="border-left-color: #2196F3;">
+            <h3>⏰ Giriş / Çıkış</h3>
+            <b>Giriş:</b> 14:00<br>
+            <b>Çıkış:</b> 11:00
+        </div>
+        """, unsafe_allow_html=True)
 
-# --- 🛠️ YÖNETİCİ MODU ---
+    with m_t2:
+        recoms = [
+            {"yer": "Cunda Adası", "not": "Ara sokaklar, sakızlı dondurma, Taş Kahve."},
+            {"yer": "Şeytan Sofrası", "not": "Muazzam gün batımı manzarası."}
+        ]
+        for r in recoms:
+            st.markdown(f'<div class="rez-card">**📍 {r["yer"]}**: {r["not"]}</div>', unsafe_allow_html=True)
+
+    with m_t3:
+        st.subheader("🆘 Desteğe mi ihtiyacınız var?")
+        st.markdown('<a href="https://wa.me/905330000000" class="wa-button">💬 WhatsApp Destek Hattı</a>', unsafe_allow_html=True)
+
+# --- 🛠️ YÖNETİCİ MODU (DASHBOARD GÖRÜNÜMÜ) ---
 elif st.session_state.user_mode == "yonetici":
-    # Basit Şifre Koruması
+    # Şifre Koruması
     if not st.session_state.admin_auth:
-        st.subheader("🔑 Yönetici Şifresi")
-        sifre = st.text_input("Şifreyi girin", type="password")
-        if st.button("Giriş Yap"):
-            if sifre == "1234": # ŞİFRE BURADAN DEĞİŞİR
+        st.subheader("🔑 Yönetici Doğrulaması")
+        sifre = st.text_input("Şifre", type="password", placeholder="Şifreyi girin")
+        if st.button("Doğrula"):
+            if sifre == "1234": # ŞİFRE: 1234
                 st.session_state.admin_auth = True
                 st.rerun()
             else: st.error("Hatalı şifre!")
     else:
-        if st.sidebar.button("🚪 Çıkış Yap"):
+        # Yönetici Paneli Aktif
+        if st.sidebar.button("🚪 Çıkış Yap", use_container_width=True):
             st.session_state.admin_auth = False
             st.session_state.user_mode = None
             st.rerun()
 
-        st.title("🛡️ Yönetici Paneli")
+        st.markdown('<h1 style="color:#008080;">🛡️ Kontrol Paneli</h1>', unsafe_allow_html=True)
         t1, t2, t3, t4, t5 = st.tabs(["📅 TAKVİM", "🔍 KAYITLAR", "💸 GİDERLER", "💰 FİNANS", "⚙️ YÖNETİM"])
 
-        with t1: # TAKVİM VE KAYIT
-            aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
-            sec_ay = st.selectbox("Ay", aylar, index=datetime.now().month-1)
-            ay_idx = aylar.index(sec_ay) + 1
-            
+        with t1: # TAKVİM PREMIUM
             c1, c2 = st.columns(2)
+            ins = df[df["Tarih"] == today_str]
             with c1:
-                st.write("### ⬇️ Giriş")
-                ins = df[df["Tarih"] == today_str]
+                st.write("### ⬇️ Girişler")
                 for _, r in ins.iterrows(): st.success(f"👤 {r['Ad Soyad']}")
             with c2:
-                st.write("### ⬆️ Çıkış")
+                st.write("### ⬆️ Çıkışlar")
                 df['T_dt'] = pd.to_datetime(df['Tarih'], errors='coerce')
                 df['C_str'] = df.apply(lambda x: (x['T_dt'] + timedelta(days=int(x['Gece'] or 0))).strftime("%Y-%m-%d") if pd.notnull(x['T_dt']) else "", axis=1)
                 for _, r in df[df["C_str"] == today_str].iterrows(): st.warning(f"🔑 {r['Ad Soyad']}")
 
             st.divider()
+            aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
+            sec_ay = st.selectbox("Ay", aylar, index=datetime.now().month-1)
+            ay_idx = aylar.index(sec_ay) + 1
+            
             cal_html = '<table class="modern-table"><tr><th>Pt</th><th>Sa</th><th>Ça</th><th>Pe</th><th>Cu</th><th>Ct</th><th>Pz</th></tr>'
             for week in calendar.monthcalendar(2026, ay_idx):
                 cal_html += '<tr>'
@@ -115,7 +197,7 @@ elif st.session_state.user_mode == "yonetici":
             st.markdown(cal_html + '</table>', unsafe_allow_html=True)
 
             q_date = st.query_params.get("date", "")
-            with st.expander("📝 Kayıt Ekle", expanded=True if q_date else False):
+            with st.expander("📝 Kayıt İşle", expanded=True if q_date else False):
                 with st.form("r_form", clear_on_submit=True):
                     f_t, f_a, f_p = st.text_input("Tarih", value=q_date), st.text_input("İsim"), st.text_input("Tel")
                     f_f, f_g = st.number_input("Fiyat", min_value=0), st.number_input("Gece", min_value=1)
@@ -125,8 +207,9 @@ elif st.session_state.user_mode == "yonetici":
                         pd.concat([df[REZ_COLS], pd.DataFrame(new_rows, columns=REZ_COLS)], ignore_index=True).to_csv("rez.csv", index=False)
                         st.rerun()
 
-        with t2: # KAYITLAR VE WHATSAPP
-            ara = st.text_input("İsim Ara")
+        with t2: # KAYITLAR
+            st.subheader("🔍 Müşteri Listesi")
+            ara = st.text_input("Arama")
             if not df.empty:
                 list_df = df.copy().fillna("").groupby(["Ad Soyad", "Toplam", "Tel", "Gece"]).agg(Baslangic=("Tarih", "min")).reset_index()
                 if ara: list_df = list_df[list_df["Ad Soyad"].str.contains(ara, case=False)]
@@ -137,27 +220,31 @@ elif st.session_state.user_mode == "yonetici":
                     st.divider()
 
         with t3: # GİDERLER
-            st.subheader("💸 Gider Girişi")
+            st.subheader("💸 Gider İşlemleri")
             with st.form("g_form", clear_on_submit=True):
                 gt, gk, ga, gu = st.date_input("Tarih"), st.selectbox("Tür", ["Temizlik", "Fatura", "Komisyon", "Diğer"]), st.text_input("Açıklama"), st.number_input("Tutar")
                 if st.form_submit_button("Gideri Kaydet"):
                     pd.concat([df_gider, pd.DataFrame([[gt.strftime("%Y-%m-%d"), gk, ga, gu]], columns=GID_COLS)], ignore_index=True).to_csv("gider.csv", index=False)
-                    st.success("Gider işlendi.")
+                    st.success("Gider kaydedildi.")
 
-        with t4: # FİNANS
+        with t4: # FİNANS DASHBOARD
             m_rez = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
             ciro, m_gid_sum = m_rez["Toplam"].sum(), df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == ay_idx]["Tutar"].sum()
             kdv = ciro * 0.20
-            st.metric("Ciro", f"{ciro:,.0f} TL")
-            st.metric("KDV", f"-{kdv:,.0f} TL")
-            st.metric("Gider", f"-{m_gid_sum:,.0f} TL")
-            st.success(f"NET: {ciro - kdv - m_gid_sum:,.0f} TL")
+            
+            st.markdown(f"### 📊 {sec_ay} Mali Özeti")
+            c1, c2, c3 = st.columns(3)
+            with c1: st.markdown(f'<div class="metric-card"><div class="label">Ciro</div><div class="value">{ciro:,.0f} TL</div></div>', unsafe_allow_html=True)
+            with c2: st.markdown(f'<div class="metric-card" style="border-left-color:#E74C3C;"><div class="label">KDV Payı</div><div class="value">-{kdv:,.0f} TL</div></div>', unsafe_allow_html=True)
+            with c3: st.markdown(f'<div class="metric-card" style="border-left-color:#E74C3C;"><div class="label">Giderler</div><div class="value">-{m_gid_sum:,.0f} TL</div></div>', unsafe_allow_html=True)
+            
+            st.markdown(f'<div class="rez-card" style="border-left-color:#2ECC71;text-align:center;">💰 <b>NET KAZANÇ: {ciro - kdv - m_gid_sum:,.0f} TL</b></div>', unsafe_allow_html=True)
 
-        with t5: # YÖNETİM & SİLME
-            st.subheader("⚙️ Veri Yönetimi")
+        with t5: # YÖNETİM
+            st.subheader("⚙️ Veri Kontrolü")
             if not df.empty:
                 csv = df.copy().fillna("").groupby(["Ad Soyad", "Tel", "Gece", "Toplam"]).agg(Giris=("Tarih", "min"), Cikis=("Tarih", "max")).to_csv(index=False).encode('utf-8-sig')
-                st.download_button("📥 Müşteri Listesini İndir", csv, f"rapor_{today_str}.csv", "text/csv")
+                st.download_button("📥 Excel Yedeği Al", csv, f"rapor.csv", "text/csv")
             st.divider()
             st.subheader("🗑️ Kayıt Sil")
             del_list = df.copy().fillna("").groupby(["Ad Soyad", "Toplam"]).agg(B=("Tarih", "min")).reset_index()
