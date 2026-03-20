@@ -4,82 +4,179 @@ from datetime import datetime, timedelta
 import calendar
 import os
 
-# --- AYARLAR ---
-st.set_page_config(page_title="Detayvalık Takvim", layout="wide")
+# --- 1. SAYFA AYARLARI VE TASARIM (CSS) ---
+st.set_page_config(page_title="Detayvalık VIP v3.0", layout="wide")
 
-# --- VERİ TABANI ---
-def load_data():
-    f1, f2 = "rezler.csv", "giderler.csv"
-    if not os.path.exists(f1): pd.DataFrame(columns=["Tarih","Ad Soyad","İletişim","Günlük Ücret","Gece","Not","Toplam"]).to_csv(f1, index=False)
-    if not os.path.exists(f2): pd.DataFrame(columns=["Tarih","Açıklama","Tutar"]).to_csv(f2, index=False)
-    return pd.read_csv(f1), pd.read_csv(f2)
+st.markdown("""
+    <style>
+    .main { background-color: #f8f9fa; }
+    .stButton>button {
+        width: 100%;
+        border-radius: 5px;
+        height: 45px;
+        font-weight: 600;
+        font-size: 14px;
+        border: 1px solid #ddd;
+    }
+    /* Takvim Hücresi Tasarımı */
+    div.stButton > button:first-child { background-color: white; color: #333; }
+    /* Durum Renkleri */
+    .dolu { background-color: #ff4b4b !important; color: white !important; }
+    .opsiyon { background-color: #ffc107 !important; color: black !important; }
+    .bos { background-color: #28a745 !important; color: white !important; }
+    
+    .metric-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border-left: 5px solid #007bff;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-df, gider_df = load_data()
+# --- 2. VERİ YÖNETİMİ ---
+def init_db():
+    if not os.path.exists("rez.csv"):
+        pd.DataFrame(columns=["Tarih","Ad Soyad","Tel","Ucret","Gece","Not","Durum","Toplam"]).to_csv("rez.csv", index=False)
+    if not os.path.exists("gider.csv"):
+        pd.DataFrame(columns=["Tarih","Kategori","Aciklama","Tutar"]).to_csv("gider.csv", index=False)
 
-st.title("🏡 Detayvalık Takvim")
+init_db()
+df = pd.read_csv("rez.csv")
+gdf = pd.read_csv("gider.csv")
 
-t1, t2, t3 = st.tabs(["📅 Takvim & Kayıt", "🔍 Sorgula", "📊 Finans"])
+# --- 3. ANA BAŞLIK ---
+st.title("🏙️ Detayvalık VIP Yönetim")
+st.caption("Profesyonel Villa İşletme Paneli")
 
-# --- TAB 1: TAKVİM ---
-with t1:
+tab1, tab2, tab3 = st.tabs(["📅 TAKVİM", "🔍 REZERVASYON REHBERİ", "📊 FİNANSAL ANALİZ"])
+
+# --- TAB 1: GERÇEK TAKVİM GÖRÜNÜMÜ ---
+with tab1:
     aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
-    sec_ay = st.selectbox("Ay Seç", aylar, index=datetime.now().month-1)
+    c1, c2 = st.columns([1, 4])
+    sec_ay = c1.selectbox("Ay Seçin", aylar, index=datetime.now().month-1)
     ay_no = aylar.index(sec_ay) + 1
     
+    st.write(f"### {sec_ay} 2026")
+    
+    # Hafta Başlıkları (Sabit 7 Sütun)
+    h_cols = st.columns(7)
+    gunler = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
+    for i, g in enumerate(gunler):
+        h_cols[i].markdown(f"<center><b>{g}</b></center>", unsafe_allow_html=True)
+
+    # Takvim Mantığı
     cal = calendar.monthcalendar(2026, ay_no)
     for hafta in cal:
         cols = st.columns(7)
         for i, gun in enumerate(hafta):
-            if gun != 0:
+            if gun == 0:
+                cols[i].write("") # Ay dışı günler boş kalsın
+            else:
                 t_str = f"2026-{ay_no:02d}-{gun:02d}"
-                dolu = t_str in df["Tarih"].astype(str).values
-                label = f"🔴 {gun}" if dolu else f"🟢 {gun}"
-                if cols[i].button(label, key=t_str):
-                    if dolu:
-                        d = df[df["Tarih"].astype(str)==t_str].iloc[0]
-                        st.warning(f"👤 {d['Ad Soyad']} | 💰 Toplam: {d['Toplam']} TL\n\n🌙 {d['Gece']} Gece | 📝 {d['Not']}")
-                    else: st.session_state.t = t_str
+                
+                # Doluluk Kontrolü
+                kayit = df[df["Tarih"] == t_str]
+                css_class = "bos"
+                if not kayit.empty:
+                    durum = kayit.iloc[0]["Durum"]
+                    css_class = "dolu" if durum == "Kesin" else "opsiyon"
+                
+                # Buton Oluşturma
+                if cols[i].button(f"{gun}", key=t_str, help=f"{t_str} Detayı"):
+                    if not kayit.empty:
+                        d = kayit.iloc[0]
+                        st.info(f"👤 **{d['Ad Soyad']}** ({d['Durum']})\n\n📞 {d['Tel']} | 💰 {d['Toplam']} TL\n\n📝 {d['Not']}")
+                    else:
+                        st.session_state.t_sec = t_str
 
-    with st.expander("➕ Yeni Kayıt", expanded=True):
-        with st.form("f", clear_on_submit=True):
-            f_t = st.text_input("Giriş Tarihi", value=st.session_state.get('t',''))
-            f_n = st.text_input("Ad Soyad")
-            f_c = st.text_input("İletişim")
-            f_u = st.number_input("Günlük Ücret", min_value=0)
-            f_g = st.number_input("Gece", min_value=1)
-            f_nt = st.text_area("Not")
-            if st.form_submit_button("Kaydet"):
-                start = datetime.strptime(f_t, "%Y-%m-%d")
-                rows = [[(start+timedelta(days=i)).strftime("%Y-%m-%d"),f_n,f_c,f_u,f_g,f_nt,f_u*f_g] for i in range(int(f_g))]
-                pd.concat([df, pd.DataFrame(rows, columns=df.columns)]).to_csv("rezler.csv", index=False)
-                st.success("Kayıt Başarılı!"); st.rerun()
+    st.divider()
+    
+    # YENİ KAYIT FORMU
+    with st.expander("➕ Yeni Rezervasyon Ekle", expanded=False):
+        with st.form("rez_form"):
+            f1, f2, f3 = st.columns(3)
+            t_input = f1.text_input("Giriş Tarihi", value=st.session_state.get('t_sec',''))
+            ad_input = f2.text_input("Müşteri Ad Soyad")
+            tel_input = f3.text_input("Telefon")
+            
+            u_input = f1.number_input("Günlük Ücret", min_value=0)
+            g_input = f2.number_input("Gece Sayısı", min_value=1)
+            d_input = f3.selectbox("Durum", ["Kesin", "Opsiyonel"])
+            not_input = st.text_area("Notlar")
+            
+            if st.form_submit_button("Sisteme İşle"):
+                try:
+                    start = datetime.strptime(t_input, "%Y-%m-%d")
+                    new_rows = []
+                    for d in range(int(g_input)):
+                        target_t = (start + timedelta(days=d)).strftime("%Y-%m-%d")
+                        new_rows.append([target_t, ad_input, tel_input, u_input, g_input, not_input, d_input, u_input*g_input])
+                    
+                    new_df = pd.DataFrame(new_rows, columns=df.columns)
+                    pd.concat([df, new_df]).to_csv("rez.csv", index=False)
+                    st.success("Kayıt Başarılı!"); st.rerun()
+                except: st.error("Tarih formatı hatalı!")
 
-# --- TAB 2: SORGULA ---
-with t2:
-    ara = st.text_input("İsim Ara:").lower()
+# --- TAB 2: AKILLI SORGULAMA ---
+with tab2:
+    st.subheader("🔍 Rezervasyon Rehberi")
+    ara = st.text_input("İsim ile Filtrele (Tüm listeyi görmek için boş bırakın):").lower()
+    
+    # Arama Boşsa Hepsi, Doluysa Filtreli
+    display_df = df.drop_duplicates(subset=["Ad Soyad", "Toplam", "Gece"]).copy()
     if ara:
-        res = df[df["Ad Soyad"].str.lower().str.contains(ara, na=False)].drop_duplicates(subset=["Ad Soyad","Toplam"])
-        st.table(res[["Ad Soyad","İletişim","Gece","Toplam","Not"]])
+        display_df = display_df[display_df["Ad Soyad"].str.lower().str.contains(ara, na=False)]
+    
+    st.dataframe(display_df[["Tarih", "Ad Soyad", "Tel", "Gece", "Durum", "Toplam", "Not"]], use_container_width=True)
+    
+    # WhatsApp Fiş Özelliği
+    if not display_df.empty and ara:
+        st.write("### 📱 WhatsApp Bilgi Notu")
+        m = display_df.iloc[0]
+        fis_metni = f"*Detayvalık Rezervasyon Bilgisi*\n\nSayın {m['Ad Soyad']},\n{m['Tarih']} girişli, {m['Gece']} gecelik kaydınız *{m['Durum']}* olarak alınmıştır.\nToplam Tutar: {m['Toplam']} TL\nİyi tatiller dileriz."
+        st.code(fis_metni)
+        st.caption("Yukarıdaki metni kopyalayıp müşteriye gönderebilirsiniz.")
 
-# --- TAB 3: FİNANS ---
-with t3:
-    f_ay = st.selectbox("Dönem", aylar, key="fin")
-    m_no = aylar.index(f_ay)+1
-    temp_df = df.copy(); temp_df["Tarih"] = pd.to_datetime(temp_df["Tarih"])
-    brut = temp_df[temp_df["Tarih"].dt.month==m_no].drop_duplicates(subset=["Ad Soyad","Toplam"])["Toplam"].sum()
-    temp_g = gider_df.copy(); temp_g["Tarih"] = pd.to_datetime(temp_g["Tarih"])
-    gider = temp_g[temp_g["Tarih"].dt.month==m_no]["Tutar"].sum()
-    kdv = brut * 0.10
+# --- TAB 3: FİNANSAL ANALİZ ---
+with tab3:
+    st.subheader("📊 Gelir / Gider Analizi")
+    f_ay = st.selectbox("Dönem", aylar, key="fin_ay", index=datetime.now().month-1)
+    f_no = aylar.index(f_ay) + 1
+    
+    # Hesaplamalar
+    temp_rez = df.copy(); temp_rez["Tarih"] = pd.to_datetime(temp_rez["Tarih"])
+    aylik_brut = temp_rez[temp_rez["Tarih"].dt.month == f_no].drop_duplicates(subset=["Ad Soyad", "Toplam"])["Toplam"].sum()
+    
+    temp_gid = gdf.copy(); temp_gid["Tarih"] = pd.to_datetime(temp_gid["Tarih"])
+    aylik_gider = temp_gid[temp_gid["Tarih"].dt.month == f_no]["Tutar"].sum()
+    
+    kdv = aylik_brut * 0.10
+    net = aylik_brut - aylik_gider - kdv
     
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Brüt", f"{brut} TL")
-    c2.metric("Gider", f"-{gider} TL")
-    c3.metric("KDV (%10)", f"-{kdv} TL")
-    c4.metric("NET KAR", f"{brut-gider-kdv} TL")
+    c1.metric("Brüt Gelir", f"{aylik_brut:,.0f} TL")
+    c2.metric("Toplam Gider", f"-{aylik_gider:,.0f} TL")
+    c3.metric("KDV (%10)", f"-{kdv:,.0f} TL")
+    c4.metric("NET KAR", f"{net:,.0f} TL")
     
-    with st.expander("💸 Gider Ekle"):
-        with st.form("g"):
-            gt = st.date_input("Tarih"); ga = st.text_input("Açıklama"); gu = st.number_input("Tutar")
+    st.divider()
+    col_l, col_r = st.columns(2)
+    with col_l:
+        st.write("### 💸 Gider Ekle")
+        with st.form("gider_form"):
+            gt = st.date_input("Tarih")
+            gk = st.selectbox("Kategori", ["Temizlik", "Faturalar", "Bahçe/Havuz", "Tamirat", "Diğer"])
+            ga = st.text_input("Açıklama")
+            gu = st.number_input("Tutar (TL)", min_value=0)
             if st.form_submit_button("Gideri Kaydet"):
-                pd.concat([gider_df, pd.DataFrame([[str(gt),ga,gu]], columns=gider_df.columns)]).to_csv("giderler.csv", index=False)
-                st.success("Gider Eklendi!"); st.rerun()
+                pd.concat([gdf, pd.DataFrame([[str(gt),gk,ga,gu]], columns=gdf.columns)]).to_csv("gider.csv", index=False)
+                st.success("Gider işlendi!"); st.rerun()
+    with col_r:
+        st.write("### 📂 Kategori Bazlı Giderler")
+        if not temp_gid[temp_gid["Tarih"].dt.month == f_no].empty:
+            pasta = temp_gid[temp_gid["Tarih"].dt.month == f_no].groupby("Kategori")["Tutar"].sum()
+            st.bar_chart(pasta)
+        else: st.info("Bu ay için gider kaydı bulunamadı.")
