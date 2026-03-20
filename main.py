@@ -88,8 +88,20 @@ with t_dash:
         if not df.empty:
             chart_data = df.drop_duplicates(["Ad Soyad", "Toplam"]).copy()
             chart_data['Ay_Yil'] = chart_data['DT'].dt.strftime('%m/%Y')
-            fig = px.bar(chart_data.groupby('Ay_Yil')['Toplam'].sum().reset_index(), x='Ay_Yil', y='Toplam', color_discrete_sequence=['#1A3636'])
+                    if not df.empty:
+            chart_data = df.drop_duplicates(["Ad Soyad", "Toplam"]).copy()
+            chart_data['Ay_Yil'] = chart_data['DT'].dt.strftime('%m/%Y')
+            summary = chart_data.groupby('Ay_Yil')['Toplam'].sum().reset_index()
+            
+            # Grafiği daha şık ve dar yapalım
+            fig = px.bar(summary, x='Ay_Yil', y='Toplam', 
+                         text_auto='.2s', # Barın üzerine rakamı yazar
+                         labels={'Toplam':'Gelir (TL)', 'Ay_Yil':'Ay/Yıl'},
+                         color_discrete_sequence=['#1A3636'])
+            
+            fig.update_layout(bargap=0.6) # Barın genişliğini daraltır, daha profesyonel durur
             st.plotly_chart(fig, use_container_width=True)
+
 
     with col_r:
         st.write("**Gelecek Rezervasyonlar**")
