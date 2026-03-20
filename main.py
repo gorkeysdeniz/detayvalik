@@ -4,42 +4,29 @@ from datetime import datetime, timedelta
 import calendar
 import os
 
-# --- 1. TASARIM VE IPHONE GÖRÜNÜRLÜK AYARLARI ---
+# --- 1. GÖRSEL VE IPHONE OKUNABİLİRLİK AYARLARI ---
 st.set_page_config(page_title="Detayvalık VIP", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: white !important; color: #1a1a1a !important; }
     
-    /* FORM BAŞLIKLARI VE BUTON FONTU (İSTEĞİNİZ ÜZERİNE SİYAH VE NET) */
-    label, .stMarkdown h3, .stMarkdown h2 { 
-        color: #000000 !important; 
-        font-weight: 800 !important; 
-    }
+    /* FORM BAŞLIKLARI VE BUTON FONTU */
+    label, .stMarkdown h3, .stMarkdown h2 { color: #000000 !important; font-weight: 800 !important; }
     
-    /* INPUT KUTULARI VE YAZI RENGİ SABİT */
+    /* INPUT KUTULARI (GÖRSELDEKİ SİYAHLIĞI BİTİRİR) */
     input, select, textarea, [data-baseweb="input"] input {
         color: #000000 !important;
         background-color: #f0f2f6 !important;
         -webkit-text-fill-color: #000000 !important;
     }
 
-    /* KAYDET VE SİL BUTONLARI */
-    .stButton button {
-        background-color: #000000 !important;
-        color: #ffffff !important;
-        font-weight: bold !important;
-        border-radius: 12px !important;
-    }
+    .stButton button { background-color: #000000 !important; color: #ffffff !important; font-weight: bold !important; border-radius: 12px !important; width: 100% !important; }
 
-    /* ALARM KARTI (YAKLAŞAN REZ) */
-    .alarm-card {
-        background: linear-gradient(135deg, #FF9A8B 0%, #FF6A88 55%, #FF99AC 100%);
-        color: white !important; padding: 20px; border-radius: 15px;
-        margin-bottom: 20px; text-align: center; font-weight: bold;
-    }
+    /* ALARM KARTI */
+    .alarm-card { background: linear-gradient(135deg, #FF9A8B 0%, #FF6A88 55%, #FF99AC 100%); color: white !important; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; font-weight: bold; }
 
-    /* TAKVİM TASARIMI */
+    /* TAKVİM */
     .modern-table { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; }
     .day-link { display: block; text-decoration: none; padding: 12px 0; border-radius: 12px; font-weight: bold; color: white !important; text-align: center; }
     .bos { background: #2ECC71 !important; } 
@@ -47,23 +34,32 @@ st.markdown("""
     .opsiyon { background: #F1C40F !important; color: #1A1A1A !important; }
     
     /* FİNANS KARTLARI */
-    .f-card {
-        background: #ffffff !important; padding: 18px; border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 12px;
-        border-left: 8px solid #007BFF; color: #000000 !important;
-    }
+    .f-card { background: #ffffff !important; padding: 18px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 12px; border-left: 8px solid #007BFF; color: #000000 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. VERİ YÖNETİMİ ---
+# --- 2. AKILLI VERİ TABANI YÖNETİMİ ---
+COLUMNS = ["Tarih", "Ad Soyad", "Tel", "Ucret", "Gece", "Not", "Durum", "Toplam"]
+
 def load_data():
     if not os.path.exists("rez.csv"):
-        pd.DataFrame(columns=["Tarih","Ad Soyad","Tel","Ucret","Gece","Durum","Toplam"]).to_csv("rez.csv", index=False)
-    return pd.read_csv("rez.csv")
+        pd.DataFrame(columns=COLUMNS).to_csv("rez.csv", index=False)
+    
+    current_df = pd.read_csv("rez.csv")
+    
+    # Sütun kontrolü ve tamiri (ValueError'u burası engeller)
+    if list(current_df.columns) != COLUMNS:
+        # Eksik sütunları ekle, fazla olanları at
+        for col in COLUMNS:
+            if col not in current_df.columns:
+                current_df[col] = 0 if col == "Toplam" else ""
+        current_df = current_df[COLUMNS]
+        current_df.to_csv("rez.csv", index=False)
+    return current_df
 
 df = load_data()
 
-# --- 3. ÜST PANEL (YAKLAŞAN REZERVASYON) ---
+# --- 3. ÜST PANEL ---
 st.title("🏡 Detayvalık Yönetim")
 today_str = datetime.now().strftime("%Y-%m-%d")
 future_rexs = df[df["Tarih"] >= today_str].sort_values(by="Tarih")
@@ -81,7 +77,7 @@ with t1:
     sec_ay = st.selectbox("Ay Seçin", aylar, index=datetime.now().month-1)
     ay_idx = aylar.index(sec_ay) + 1
     
-    # Takvim Çizimi
+    # Takvim
     cal_html = '<table class="modern-table"><thead><tr>'
     for g in ["Pt","Sa","Ça","Pe","Cu","Ct","Pz"]: cal_html += f'<th>{g}</th>'
     cal_html += '</tr></thead><tbody>'
@@ -102,29 +98,33 @@ with t1:
         with st.form("r_form"):
             f_tar = st.text_input("Giriş Tarihi", value=q_date)
             f_ad = st.text_input("Müşteri Ad Soyad")
-            f_tel = st.text_input("WhatsApp No")
+            f_tel = st.text_input("WhatsApp")
             f_ucr = st.number_input("Gecelik Fiyat", min_value=0)
-            f_gc = st.number_input("Gece Sayısı", min_value=1)
-            if st.form_submit_button("KAYDET"):
-                start_dt = datetime.strptime(f_tar, "%Y-%m-%d")
-                new_rows = [[(start_dt + timedelta(days=i)).strftime("%Y-%m-%d"), f_ad, f_tel, f_ucr, f_gc, "Kesin", f_ucr*f_gc] for i in range(int(f_gc))]
-                pd.concat([df, pd.DataFrame(new_rows, columns=df.columns)]).to_csv("rez.csv", index=False)
-                st.rerun()
+            f_gc = st.number_input("Gece", min_value=1)
+            if st.form_submit_button("SİSTEME KAYDET"):
+                if f_tar and f_ad:
+                    start_dt = datetime.strptime(f_tar, "%Y-%m-%d")
+                    new_data = []
+                    for i in range(int(f_gc)):
+                        tar = (start_dt + timedelta(days=i)).strftime("%Y-%m-%d")
+                        new_data.append([tar, f_ad, f_tel, f_ucr, f_gc, "", "Kesin", f_ucr*f_gc])
+                    
+                    new_df = pd.DataFrame(new_data, columns=COLUMNS)
+                    pd.concat([df, new_df], ignore_index=True).to_csv("rez.csv", index=False)
+                    st.rerun()
 
 with t2:
     st.subheader("🔍 Kayıt Sorgulama")
     search = st.text_input("Müşteri ismine göre filtrele")
-    
     if not df.empty:
         k_df = df.copy()
         k_df['Tarih'] = pd.to_datetime(k_df['Tarih'])
+        # Müşteri bazlı gruplama
         grouped = k_df.groupby(['Ad Soyad', 'Toplam']).agg(Giris=('Tarih', 'min'), Cikis=('Tarih', 'max'), Gece=('Gece', 'first')).reset_index()
-        
         if search:
             grouped = grouped[grouped['Ad Soyad'].str.contains(search, case=False)]
-        
         for _, r in grouped.iterrows():
-            st.markdown(f"""<div class="f-card"><b>👤 {r['Ad Soyad']}</b><br>📅 {r['Giris'].strftime('%d %b')} - {r['Cikis'].strftime('%d %b')} ({int(r['Gece'])} Gece)<br>💰 Toplam: {r['Toplam']:,.0f} TL</div>""", unsafe_allow_html=True)
+            st.markdown(f'<div class="f-card"><b>👤 {r["Ad Soyad"]}</b><br>📅 {r["Giris"].strftime("%d %b")} - {r["Cikis"].strftime("%d %b")} ({int(r["Gece"])} Gece)<br>💰 Toplam: {r["Toplam"]:,.0f} TL</div>', unsafe_allow_html=True)
 
 with t3:
     df_f = df.copy()
@@ -135,23 +135,18 @@ with t3:
     st.subheader(f"📊 {sec_ay} Özeti")
     st.markdown(f'<div class="f-card">💰 Aylık Brüt: {ay_data["Toplam"].sum():,.0f} TL</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="f-card" style="border-left-color: #E74C3C;">🧾 KDV Payı (%20): -{ay_data["Toplam"].sum()*0.20:,.0f} TL</div>', unsafe_allow_html=True)
-    
     st.divider()
     st.subheader("🌍 Genel Toplam")
-    st.markdown(f'<div class="f-card" style="border-left-color: #F1C40F;">✨ TOPLAM NET GELİR: {all_data["Toplam"].sum()*0.63:,.0f} TL</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="f-card" style="border-left-color: #2ECC71;">✨ TOPLAM NET GELİR: {all_data["Toplam"].sum()*0.63:,.0f} TL</div>', unsafe_allow_html=True)
 
 with t4:
     st.subheader("⚙️ Veri Yönetimi")
-    st.warning("Dikkat: Buradan silinen veriler geri getirilemez.")
-    
     if not df.empty:
-        # Silme işlemi için tekilleştirilmiş liste
         delete_list = df.drop_duplicates(subset=["Ad Soyad", "Toplam"]).copy()
         for idx, row in delete_list.iterrows():
-            col1, col2 = st.columns([4, 1])
-            col1.write(f"🗑️ {row['Ad Soyad']} ({row['Toplam']} TL)")
-            if col2.button("Sil", key=f"del_{idx}"):
-                # İsme ve toplama göre tüm günleri sil
+            c1, c2 = st.columns([4, 1])
+            c1.write(f"🗑️ {row['Ad Soyad']} ({row['Toplam']} TL)")
+            if c2.button("Sil", key=f"del_{idx}"):
                 df = df[~((df["Ad Soyad"] == row["Ad Soyad"]) & (df["Toplam"] == row["Toplam"]))]
                 df.to_csv("rez.csv", index=False)
                 st.rerun()
