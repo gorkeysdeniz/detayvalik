@@ -43,7 +43,13 @@ df_gider = load_data("gider.csv", GID_COLS)
 
 def get_customer_based_df(input_df):
     if input_df.empty: return input_df
-    return input_df.copy().fillna("").groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Not"]).agg(Giris_Tarihi=("Tarih", "min")).reset_index()
+    # Müşteri bazlı gruplama ve giriş tarihini bulma
+    temp_df = input_df.copy().fillna("")
+    res = temp_df.groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Not"]).agg(Giris_Tarihi=("Tarih", "min")).reset_index()
+    # Çıkış tarihini hesaplama (Giriş + Gece)
+    res['Giris_DT'] = pd.to_datetime(res['Giris_Tarihi'])
+    res['Cikis_Tarihi'] = (res['Giris_DT'] + pd.to_timedelta(res['Gece'].astype(int), unit='D')).dt.strftime('%Y-%m-%d')
+    return res.sort_values(by="Giris_DT", ascending=False)
 
 # --- 3. ANA PANEL ---
 st.markdown('<div class="main-header">Villa Rezervasyon ve Gider Yönetimi</div>', unsafe_allow_html=True)
@@ -55,7 +61,6 @@ with t1:
     with c1: sec_ay = st.selectbox("Dönem", aylar, index=datetime.now().month-1)
     ay_idx = aylar.index(sec_ay) + 1
     
-    # Takvim Mantığı (v40 ile aynı)
     cal_html = '<table class="modern-table"><tr><th>Pt</th><th>Sa</th><th>Ça</th><th>Pe</th><th>Cu</th><th>Ct</th><th>Pz</th></tr>'
     for week in calendar.monthcalendar(2026, ay_idx):
         cal_html += '<tr>'
@@ -88,20 +93,33 @@ with t1:
                     st.query_params.clear(); st.rerun()
 
 with t2:
-    st.markdown("### Rezervasyonlar ve Onay Mesajları")
+    st.markdown("### Rezervasyon Sorgulama")
+    search_query = st.text_input("🔍 İsim veya Telefon ile Ara...", placeholder="Örn: Ahmet Yılmaz")
+    
     if not df.empty:
         cust_df = get_customer_based_df(df)
+        
+        # Arama filtresi
+        if search_query:
+            cust_df = cust_df[cust_df['Ad Soyad'].str.contains(search_query, case=False) | cust_df['Tel'].astype(str).str.contains(search_query)]
+        
+        st.divider()
         for i, r in cust_df.iterrows():
             col1, col2 = st.columns([4, 2])
-            col1.markdown(f"**{r['Giris_Tarihi']}** | {r['Ad Soyad']} | {r['Toplam']:,} TL")
+            # GİRİŞ - ÇIKIŞ VE GECE BİLGİSİ EKLENDİ
+            col1.markdown(f"""
+                **{r['Ad Soyad']}** 📅 Giriş: `{r['Giris_Tarihi']}` | 🚪 Çıkış: `{r['Cikis_Tarihi']}`  
+                🌙 Konaklama: `{r['Gece']} Gece` | 💰 Toplam: `{r['Toplam']:,} TL`
+            """)
+            
             if r['Tel']:
                 clean_tel = str(r['Tel']).replace(' ','').replace('+','')
-                msg_doc = urllib.parse.quote(f"📝 *VİLLA REZERVASYON ONAYI*\n\nMisafir: {r['Ad Soyad']}\nGiriş: {r['Giris_Tarihi']}\nToplam: {r['Toplam']:,} TL\n\n---------------------------\n🏡 *KURALLAR*\n🗝️ Giriş: 14:00 | Çıkış: 11:00\n❄️ Klimaları ayrılırken kapatınız.\n🚭 Sigara içilmez.\n🧹 Düzenli bırakılmalıdır.")
+                msg_doc = urllib.parse.quote(f"📝 *VİLLA REZERVASYON ONAYI*\n\nMisafir: {r['Ad Soyad']}\nGiriş: {r['Giris_Tarihi']}\nÇıkış: {r['Cikis_Tarihi']}\nGece: {r['Gece']}\nToplam: {r['Toplam']:,} TL\n\n---------------------------\n🏡 *KURALLAR*\n🗝️ Giriş: 14:00 | Çıkış: 11:00\n❄️ Klimaları ayrılırken kapatınız.\n🚭 Sigara içilmez.\n🧹 Düzenli bırakılmalıdır.")
                 col2.markdown(f'<a href="https://wa.me/{clean_tel}?text={msg_doc}" target="_blank" class="doc-link">Belge Gönder</a>', unsafe_allow_html=True)
             st.divider()
 
 with t3:
-    st.markdown("### Gider Takibi")
+    st.markdown("### Gider Kayıtları")
     with st.form("gid_f", clear_on_submit=True):
         c1, c2, c3 = st.columns(3); gt, gk, gu = c1.date_input("Tarih"), c2.selectbox("Tür", ["Temizlik", "Fatura", "Bakım", "Diğer"]), c3.number_input("Tutar")
         ga = st.text_input("Açıklama")
@@ -112,24 +130,18 @@ with t3:
 with t4:
     st.markdown(f"### {sec_ay} Finansal Rapor")
     m_rez = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
-    
-    # GELİŞMİŞ VERGİ HESAPLARI (Brüt üzerinden ayrıştırma)
     toplam_brut = m_rez["Toplam"].sum()
     kdv_tutari = toplam_brut - (toplam_brut / (1 + KDV_ORANI))
     konaklama_vergisi = toplam_brut - (toplam_brut / (1 + TURIZM_VERGISI))
-    
     vergisiz_gelir = toplam_brut - kdv_tutari - konaklama_vergisi
     toplam_gider = df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == ay_idx]["Tutar"].sum()
     gercek_kar = vergisiz_gelir - toplam_gider
 
-    # GÖRSEL PANELLER (6'lı Dashboard)
     c1, c2, c3 = st.columns(3)
     c1.markdown(f'<div class="stat-box"><small>Brüt Ciro</small><br><b>{toplam_brut:,.0f} TL</b></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="stat-box"><small>KDV (%10)</small><br><b style="color:#A94438;">{kdv_tutari:,.0f} TL</b></div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="stat-box"><small>Turizm Vergisi (%2)</small><br><b style="color:#A94438;">{konaklama_vergisi:,.0f} TL</b></div>', unsafe_allow_html=True)
-    
-    st.write("") # Boşluk
-    
+    st.write("")
     c4, c5, c6 = st.columns(3)
     c4.markdown(f'<div class="stat-box"><small>Vergisiz Net Gelir</small><br><b>{vergisiz_gelir:,.0f} TL</b></div>', unsafe_allow_html=True)
     c5.markdown(f'<div class="stat-box"><small>Toplam Gider</small><br><b style="color:#A94438;">-{toplam_gider:,.0f} TL</b></div>', unsafe_allow_html=True)
