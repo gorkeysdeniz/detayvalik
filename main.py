@@ -5,44 +5,45 @@ import calendar
 import os
 import urllib.parse
 
-# --- 1. AYARLAR & PROFESYONEL TEMA ---
-st.set_page_config(page_title="Detayvalık VIP Dashboard", layout="wide", initial_sidebar_state="expanded")
+# --- 1. AYARLAR VE KURUMSAL TEMA ---
+st.set_page_config(page_title="Detayvalık Yönetim Paneli", layout="wide")
 
 st.markdown("""
     <style>
-    /* Ana Arka Plan ve Font */
-    .stApp { background-color: #F8F9FA !important; }
-    h1, h2, h3, p, span, div { font-family: 'Inter', sans-serif !important; color: #1E293B !important; }
+    /* Genel Arayüz */
+    .stApp { background-color: #FDFDFD !important; }
+    .main-header { color: #1A3636; font-size: 24px; font-weight: 700; margin-bottom: 20px; border-bottom: 2px solid #D6BD98; padding-bottom: 10px; }
     
-    /* Yan Menü (Sidebar) Tasarımı */
-    [data-testid="stSidebar"] { background-color: #008080 !important; border-right: 1px solid #e2e8f0; }
-    [data-testid="stSidebar"] * { color: white !important; }
-    
-    /* Profesyonel Kartlar */
-    .stat-card {
-        background: white; padding: 20px; border-radius: 12px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-top: 5px solid #008080;
-        text-align: center; margin-bottom: 20px;
+    /* Sekme Tasarımı */
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [data-baseweb="tab"] { 
+        background-color: #F1F1F1; border-radius: 4px 4px 0 0; padding: 8px 16px; color: #4A4A4A !important;
     }
-    .rez-detail-card {
-        background: #FFF9E6; padding: 15px; border-radius: 10px;
-        border: 1px solid #DAA520; margin-bottom: 20px;
-    }
-    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] { background-color: #1A3636 !important; color: white !important; }
+
     /* Takvim Hücreleri */
-    .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; }
+    .modern-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
     .day-link { 
-        display: block; text-decoration: none; padding: 18px 0; border-radius: 10px; 
-        font-weight: 700; color: white !important; text-align: center; transition: 0.3s;
+        display: block; text-decoration: none; padding: 20px 0; border-radius: 6px; 
+        font-weight: 600; color: white !important; text-align: center; transition: 0.2s;
     }
-    .day-link:hover { transform: translateY(-3px); filter: brightness(1.1); }
-    .bos { background: #10B981 !important; } /* Yeşil */
-    .dolu { background: #EF4444 !important; } /* Kırmızı */
+    .bos { background: #4F6F52 !important; } /* Soft Yeşil */
+    .dolu { background: #A94438 !important; } /* Soft Kırmızı */
+    .day-link:hover { opacity: 0.8; transform: scale(1.02); }
+
+    /* Bilgi Kartları */
+    .info-panel {
+        background: #F8F4EC; border: 1px solid #D6BD98; padding: 20px; border-radius: 8px; margin-bottom: 25px;
+    }
+    .stat-box {
+        background: white; border: 1px solid #E5E7EB; padding: 20px; border-radius: 8px; text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
     
     /* Butonlar */
     .stButton button {
-        background: #008080 !important; color: white !important;
-        border-radius: 8px !important; border: none !important; font-weight: bold !important;
+        background-color: #1A3636 !important; color: white !important; border-radius: 4px !important;
+        border: none !important; height: 45px; width: 100%; font-weight: 500;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -57,31 +58,20 @@ def load_data(file, cols):
 
 df = load_data("rez.csv", REZ_COLS)
 df_gider = load_data("gider.csv", GID_COLS)
-today_str = datetime.now().strftime("%Y-%m-%d")
 
-# --- 3. YAN MENÜ (NAVIGATION) ---
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/619/619034.png", width=80) # Örnek ikon
-    st.title("Detayvalık VIP")
-    menu = st.radio("MENÜ", ["📅 Takvim & İşlemler", "🔍 Müşteri Kayıtları", "💸 Gider Yönetimi", "💰 Finansal Analiz", "⚙️ Veri Yönetimi"])
-    st.divider()
-    st.caption("v32.0 Premium Dashboard")
+# --- 3. ANA PANEL ---
+st.markdown('<div class="main-header">Detayvalık Villa Yönetimi</div>', unsafe_allow_html=True)
 
-# --- 4. FONKSİYONLAR ---
-def get_rez_info(date_str):
-    return df[df["Tarih"] == date_str]
+t1, t2, t3, t4, t5 = st.tabs(["Takvim", "Rezervasyonlar", "Giderler", "Finans", "Ayarlar"])
 
-# --- 5. SAYFA İÇERİKLERİ ---
-
-if menu == "📅 Takvim & İşlemler":
-    st.header("📅 Rezervasyon Takvimi")
-    
+with t1:
     aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
-    c1, c2 = st.columns([1, 2])
-    with c1: sec_ay = st.selectbox("Görüntülenen Ay", aylar, index=datetime.now().month-1)
+    c1, c2 = st.columns([1, 3])
+    with c1:
+        sec_ay = st.selectbox("Dönem Seçimi", aylar, index=datetime.now().month-1)
     ay_idx = aylar.index(sec_ay) + 1
     
-    # Takvim Grid
+    # Takvim Çizimi
     cal_html = '<table class="modern-table"><tr><th>Pt</th><th>Sa</th><th>Ça</th><th>Pe</th><th>Cu</th><th>Ct</th><th>Pz</th></tr>'
     for week in calendar.monthcalendar(2026, ay_idx):
         cal_html += '<tr>'
@@ -95,71 +85,73 @@ if menu == "📅 Takvim & İşlemler":
         cal_html += '</tr>'
     st.markdown(cal_html + '</table>', unsafe_allow_html=True)
 
-    # --- Tıklanan Günün Detayı ---
+    # --- AKILLI ETKİLEŞİM PANELİ ---
     q_date = st.query_params.get("date", "")
     if q_date:
-        st.divider()
-        rez_bilgi = get_rez_info(q_date)
+        st.markdown(f"### Seçili Tarih: {q_date}")
+        day_data = df[df["Tarih"] == q_date]
         
-        if not rez_bilgi.empty:
-            # GÜN DOLUYSA: BİLGİLERİ GETİR
-            info = rez_bilgi.iloc[0]
+        if not day_data.empty:
+            # GÜN DOLUYSA BİLGİ PANELİ
+            info = day_data.iloc[0]
             st.markdown(f"""
-            <div class="rez-detail-card">
-                <h4>📌 {q_date} Tarihli Rezervasyon Detayı</h4>
-                <b>👤 Müşteri:</b> {info['Ad Soyad']} <br>
-                <b>📞 Telefon:</b> {info['Tel']} <br>
-                <b>📝 Not:</b> {info['Not'] if info['Not'] else 'Not yok.'} <br>
-                <b>💰 Toplam Tutar:</b> {info['Toplam']:,} TL
+            <div class="info-panel">
+                <b style="color:#A94438;">Dolu Tarih Bilgisi:</b><br>
+                <b>Müşteri:</b> {info['Ad Soyad']} | <b>Telefon:</b> {info['Tel']}<br>
+                <b>Konaklama:</b> {info['Gece']} Gece | <b>Ücret:</b> {info['Toplam']:,} TL<br>
+                <b>Notlar:</b> {info['Not'] if info['Not'] else '-'}
             </div>
             """, unsafe_allow_html=True)
         else:
-            # GÜN BOŞSA: KAYIT FORMU AÇ
-            st.markdown(f"### 📝 {q_date} İçin Yeni Kayıt")
-            with st.form("pro_rez_form", clear_on_submit=True):
-                f_a, f_p = st.text_input("Müşteri Ad Soyad"), st.text_input("Telefon")
-                f_f, f_g = st.number_input("Gecelik Fiyat", min_value=0), st.number_input("Gece Sayısı", min_value=1)
-                f_n = st.text_area("Özel Notlar (Örn: Kapora alındı, Ek yatak istendi)")
-                if st.form_submit_button("RESERVASYONU ONAYLA"):
+            # GÜN BOŞSA KAYIT FORMU
+            with st.form("kayit_formu", clear_on_submit=True):
+                col_a, col_b = st.columns(2)
+                f_a = col_a.text_input("Müşteri Ad Soyad")
+                f_p = col_b.text_input("Telefon Numarası")
+                f_f = col_a.number_input("Gecelik Ücret", min_value=0)
+                f_g = col_b.number_input("Gece Sayısı", min_value=1)
+                f_n = st.text_area("Rezervasyon Notu")
+                if st.form_submit_button("Rezervasyonu Kaydet"):
                     start = datetime.strptime(q_date, "%Y-%m-%d")
                     new_rows = [[(start+timedelta(days=i)).strftime("%Y-%m-%d"), f_a, f_p, f_f, f_g, f_n, "Kesin", f_f*f_g] for i in range(int(f_g))]
                     pd.concat([df, pd.DataFrame(new_rows, columns=REZ_COLS)], ignore_index=True).to_csv("rez.csv", index=False)
                     st.query_params.clear()
                     st.rerun()
 
-elif menu == "🔍 Müşteri Kayıtları":
-    st.header("🔍 Müşteri Veritabanı")
-    ara = st.text_input("Müşteri ismi ile hızlı arama...")
+with t2:
+    st.markdown("### Kayıtlı Rezervasyon Listesi")
+    ara = st.text_input("İsim ile filtrele...")
     if not df.empty:
         list_df = df.copy().fillna("").groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Not"]).agg(Giris=("Tarih", "min")).reset_index()
         if ara: list_df = list_df[list_df["Ad Soyad"].str.contains(ara, case=False)]
-        
-        for _, r in list_df.iterrows():
-            with st.container():
-                st.markdown(f"""
-                <div class="rez-card">
-                    <b>👤 {r["Ad Soyad"]}</b> | 📅 {r["Giris"]} | 🌙 {r["Gece"]} Gece <br>
-                    <small>📝 {r["Not"]}</small> <br>
-                    <b>💰 {r["Toplam"]:,} TL</b>
-                </div>
-                """, unsafe_allow_html=True)
-                if r['Tel']:
-                    st.markdown(f'<a href="https://wa.me/{str(r["Tel"]).replace(" ","")}" class="wa-button">💬 WhatsApp Mesajı</a>', unsafe_allow_html=True)
-                st.divider()
+        st.table(list_df[["Giris", "Ad Soyad", "Gece", "Toplam", "Not"]])
 
-elif menu == "💰 Finansal Analiz":
-    st.header("💰 Finansal Dashboard")
-    ay_list = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
-    sec_ay_fin = st.selectbox("Analiz Dönemi", ay_list, index=datetime.now().month-1)
-    f_idx = ay_list.index(sec_ay_fin) + 1
-    
-    m_rez = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == f_idx].drop_duplicates(["Ad Soyad", "Toplam"])
+with t3:
+    st.markdown("### Gider Yönetimi")
+    with st.form("gider_giris", clear_on_submit=True):
+        c1, c2, c3 = st.columns(3)
+        gt = c1.date_input("Tarih")
+        gk = c2.selectbox("Kategori", ["Temizlik", "Fatura", "Bakım", "Mutfak", "Diğer"])
+        gu = c3.number_input("Tutar")
+        ga = st.text_input("Açıklama")
+        if st.form_submit_button("Gideri İşle"):
+            pd.concat([df_gider, pd.DataFrame([[gt.strftime("%Y-%m-%d"), gk, ga, gu]], columns=GID_COLS)], ignore_index=True).to_csv("gider.csv", index=False)
+            st.rerun()
+    st.divider()
+    st.dataframe(df_gider, use_container_width=True)
+
+with t4:
+    st.markdown(f"### {sec_ay} Dönemi Finansal Durum")
+    m_rez = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
     ciro = m_rez["Toplam"].sum()
-    m_gid = df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == f_idx]["Tutar"].sum()
+    m_gid = df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == ay_idx]["Tutar"].sum()
     
     col1, col2, col3 = st.columns(3)
-    with col1: st.markdown(f'<div class="stat-card"><h3>Ciro</h3><h2 style="color:#008080;">{ciro:,.0f} TL</h2></div>', unsafe_allow_html=True)
-    with col2: st.markdown(f'<div class="stat-card"><h3>Gider</h3><h2 style="color:#EF4444;">-{m_gid:,.0f} TL</h2></div>', unsafe_allow_html=True)
-    with col3: st.markdown(f'<div class="stat-card"><h3>Net</h3><h2 style="color:#10B981;">{ciro - m_gid:,.0f} TL</h2></div>', unsafe_allow_html=True)
+    col1.markdown(f'<div class="stat-box"><small>Ciro</small><br><b>{ciro:,.0f} TL</b></div>', unsafe_allow_html=True)
+    col2.markdown(f'<div class="stat-box"><small>Gider</small><br><b>-{m_gid:,.0f} TL</b></div>', unsafe_allow_html=True)
+    col3.markdown(f'<div class="stat-box"><small>Net Kar</small><br><b>{ciro - m_gid:,.0f} TL</b></div>', unsafe_allow_html=True)
 
-# Giderler ve Ayarlar bölümleri de benzer şık yapıda devam eder...
+with t5:
+    st.markdown("### Veri Yönetimi")
+    if st.button("Tüm Verileri CSV Olarak İndir"):
+        st.download_button("İndirmeyi Başlat", df.to_csv(index=False).encode('utf-8-sig'), "data.csv")
