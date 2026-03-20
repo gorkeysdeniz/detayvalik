@@ -22,11 +22,10 @@ st.markdown("""
     .info-panel { background: #F8F4EC; border: 1px solid #D6BD98; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
     .stat-box { background: white; border: 1px solid #E5E7EB; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .stButton button { background-color: #1A3636 !important; color: white !important; border-radius: 4px !important; border: none !important; height: 45px; width: 100%; font-weight: 500; }
-    /* WhatsApp Buton Stili */
-    .wa-link { 
-        display: inline-block; background-color: #25D366; color: white !important; 
-        padding: 5px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: 600;
-    }
+    
+    /* WhatsApp ve Belge Butonları */
+    .wa-link { display: inline-block; background-color: #25D366; color: white !important; padding: 5px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: 600; margin-right: 5px; }
+    .doc-link { display: inline-block; background-color: #008080; color: white !important; padding: 5px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: 600; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -43,7 +42,6 @@ df_gider = load_data("gider.csv", GID_COLS)
 
 def get_customer_based_df(input_df):
     if input_df.empty: return input_df
-    # Müşteri bazlı gruplama: Aynı isim ve toplam tutara sahip kayıtları tek satıra indirger
     return input_df.copy().fillna("").groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Not"]).agg(Giris_Tarihi=("Tarih", "min")).reset_index()
 
 # --- 3. ANA PANEL ---
@@ -51,7 +49,7 @@ st.markdown('<div class="main-header">Detayvalık Villa Yönetimi</div>', unsafe
 
 t1, t2, t3, t4, t5 = st.tabs(["Takvim", "Rezervasyonlar", "Giderler", "Finans", "Ayarlar"])
 
-with t1:
+with t1: # TAKVİM AYNI KALIYOR
     aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
     c1, c2 = st.columns([1, 3])
     with c1: sec_ay = st.selectbox("Dönem Seçimi", aylar, index=datetime.now().month-1)
@@ -64,8 +62,7 @@ with t1:
             if day == 0: cal_html += '<td></td>'
             else:
                 d_s = f"2026-{ay_idx:02d}-{day:02d}"
-                is_dolu = not df[df["Tarih"] == d_s].empty
-                cl = "dolu" if is_dolu else "bos"
+                cl = "dolu" if not df[df["Tarih"] == d_s].empty else "bos"
                 cal_html += f'<td><a href="?date={d_s}" target="_self" class="day-link {cl}">{day}</a></td>'
         cal_html += '</tr>'
     st.markdown(cal_html + '</table>', unsafe_allow_html=True)
@@ -76,78 +73,80 @@ with t1:
         day_data = df[df["Tarih"] == q_date]
         if not day_data.empty:
             info = day_data.iloc[0]
-            st.markdown(f"""
-            <div class="info-panel">
-                <b style="color:#A94438;">Seçili Tarih Bilgisi ({q_date}):</b><br>
-                <b>Müşteri:</b> {info['Ad Soyad']} | <b>Tel:</b> {info['Tel']}<br>
-                <b>Konaklama:</b> {info['Gece']} Gece | <b>Tutar:</b> {info['Toplam']:,} TL<br>
-                <b>Notlar:</b> {info['Not'] if info['Not'] else '-'}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f'<div class="info-panel"><b>Tarih: {q_date}</b><br>Müşteri: {info["Ad Soyad"]} | Tutar: {info["Toplam"]:,} TL<br>Not: {info["Not"]}</div>', unsafe_allow_html=True)
         else:
-            with st.form("kayit_f", clear_on_submit=True):
-                st.markdown(f"**{q_date} İçin Yeni Kayıt**")
-                c_a, c_b = st.columns(2)
-                f_a, f_p = c_a.text_input("Ad Soyad"), c_b.text_input("Telefon")
-                f_f, f_g = c_a.number_input("Gecelik Ücret", min_value=0), c_b.number_input("Gece Sayısı", min_value=1)
-                f_n = st.text_area("Notlar")
+            with st.form("new_r"):
+                st.write(f"**{q_date} Kaydı**")
+                c_a, c_b = st.columns(2); f_a, f_p = c_a.text_input("Ad Soyad"), c_b.text_input("Tel")
+                f_f, f_g = c_a.number_input("Gecelik", min_value=0), c_b.number_input("Gece", min_value=1)
+                f_n = st.text_area("Not")
                 if st.form_submit_button("Kaydet"):
                     start = datetime.strptime(q_date, "%Y-%m-%d")
                     new = [[(start+timedelta(days=i)).strftime("%Y-%m-%d"), f_a, f_p, f_f, f_g, f_n, "Kesin", f_f*f_g] for i in range(int(f_g))]
                     pd.concat([df, pd.DataFrame(new, columns=REZ_COLS)], ignore_index=True).to_csv("rez.csv", index=False)
                     st.query_params.clear(); st.rerun()
 
-with t2:
-    st.markdown("### Kayıtlı Rezervasyon Listesi")
-    ara = st.text_input("Müşteri Ara...")
+with t2: # REZERVASYONLAR + BELGE GÖNDERME
+    st.markdown("### Rezervasyon Listesi ve Onay Belgeleri")
     if not df.empty:
         cust_df = get_customer_based_df(df)
-        if ara: cust_df = cust_df[cust_df["Ad Soyad"].str.contains(ara, case=False)]
-        
-        # WhatsApp Entegrasyonlu Liste
         for i, r in cust_df.iterrows():
-            col1, col2 = st.columns([5, 1])
-            col1.markdown(f"**{r['Giris_Tarihi']}** | {r['Ad Soyad']} | {r['Gece']} Gece | {r['Toplam']:,} TL")
+            col1, col2 = st.columns([4, 2])
+            col1.markdown(f"**{r['Giris_Tarihi']}** | {r['Ad Soyad']} | {r['Toplam']:,} TL")
+            
             if r['Tel']:
-                msg = urllib.parse.quote(f"Merhaba {r['Ad Soyad']}, Detayvalık rezervasyonunuz onaylanmıştır. Giriş tarihiniz: {r['Giris_Tarihi']}. Görüşmek üzere!")
-                wa_url = f"https://wa.me/{str(r['Tel']).replace(' ','').replace('+','')}?text={msg}"
-                col2.markdown(f'<a href="{wa_url}" target="_blank" class="wa-link">WhatsApp</a>', unsafe_allow_html=True)
+                # 1. Standart WhatsApp Mesajı
+                clean_tel = str(r['Tel']).replace(' ','').replace('+','')
+                msg_simple = urllib.parse.quote(f"Merhaba {r['Ad Soyad']}, rezervasyonunuz onaylanmıştır.")
+                
+                # 2. Kurallı Dijital Belge (Fatura Yerine)
+                msg_doc = urllib.parse.quote(
+                    f"📝 *DETAYVALIK VİLLA REZERVASYON ONAYI*\n\n"
+                    f"👤 *Misafir:* {r['Ad Soyad']}\n"
+                    f"📅 *Giriş Tarihi:* {r['Giris_Tarihi']}\n"
+                    f"🌙 *Konaklama:* {r['Gece']} Gece\n"
+                    f"💰 *Toplam Tutar:* {r['Toplam']:,} TL\n\n"
+                    f"---------------------------\n"
+                    f"🏡 *VİLLA KURALLARI & BİLGİLER*\n"
+                    f"🗝️ *Giriş Saati:* 14:00 | *Çıkış Saati:* 11:00\n"
+                    f"❄️ *Klima:* Lütfen villadan ayrılırken klimaları kapatınız.\n"
+                    f"🚭 *Sigara:* Villa içerisinde sigara içilmesi yasaktır.\n"
+                    f"🏊 *Havuz:* Havuz kullanım saatlerine uymanız rica olunur.\n\n"
+                    f"İyi tatiller dileriz!"
+                )
+                
+                col2.markdown(f"""
+                    <a href="https://wa.me/{clean_tel}?text={msg_simple}" target="_blank" class="wa-link">WhatsApp</a>
+                    <a href="https://wa.me/{clean_tel}?text={msg_doc}" target="_blank" class="doc-link">Belge Gönder</a>
+                """, unsafe_allow_html=True)
             st.divider()
 
+# DİĞER SEKMELER (Gider, Finans, Ayarlar/Silme) ÖNCEKİ HALİYLE KORUNUYOR...
 with t3:
     st.markdown("### Gider Yönetimi")
     with st.form("gid_f", clear_on_submit=True):
-        c1, c2, c3 = st.columns(3)
-        gt, gk, gu = c1.date_input("Tarih"), c2.selectbox("Tür", ["Temizlik", "Fatura", "Bakım", "Diğer"]), c3.number_input("Tutar")
+        c1, c2, c3 = st.columns(3); gt, gk, gu = c1.date_input("Tarih"), c2.selectbox("Tür", ["Temizlik", "Fatura", "Bakım", "Diğer"]), c3.number_input("Tutar")
         ga = st.text_input("Açıklama")
         if st.form_submit_button("Gideri Kaydet"):
-            pd.concat([df_gider, pd.DataFrame([[gt.strftime("%Y-%m-%d"), gk, ga, gu]], columns=GID_COLS)], ignore_index=True).to_csv("gider.csv", index=False)
-            st.rerun()
+            pd.concat([df_gider, pd.DataFrame([[gt.strftime("%Y-%m-%d"), gk, ga, gu]], columns=GID_COLS)], ignore_index=True).to_csv("gider.csv", index=False); st.rerun()
     st.dataframe(df_gider, use_container_width=True, hide_index=True)
 
 with t4:
-    st.markdown(f"### {sec_ay} Finansal Özet")
+    st.markdown(f"### {sec_ay} Finans")
     m_rez = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
-    ciro = m_rez["Toplam"].sum()
-    m_gid = df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == ay_idx]["Tutar"].sum()
+    ciro, m_gid = m_rez["Toplam"].sum(), df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == ay_idx]["Tutar"].sum()
     c1, c2, c3 = st.columns(3)
     c1.markdown(f'<div class="stat-box"><small>Ciro</small><br><b>{ciro:,.0f} TL</b></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="stat-box"><small>Gider</small><br><b>-{m_gid:,.0f} TL</b></div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="stat-box"><small>Net</small><br><b>{ciro - m_gid:,.0f} TL</b></div>', unsafe_allow_html=True)
 
 with t5:
-    st.markdown("### Veri ve Sistem Yönetimi")
+    st.markdown("### Yönetim")
     if not df.empty:
-        report_df = get_customer_based_df(df)
-        st.download_button("📊 Müşteri Bazlı Rapor İndir", report_df.to_csv(index=False).encode('utf-8-sig'), "detayvalik_musteri_raporu.csv", "text/csv")
-    
-    st.divider()
-    st.markdown("### Kayıt Silme İşlemi")
-    if not df.empty:
+        st.download_button("📊 Rapor İndir", get_customer_based_df(df).to_csv(index=False).encode('utf-8-sig'), "rapor.csv")
+        st.divider()
         del_df = get_customer_based_df(df)
         for i, r in del_df.iterrows():
-            col_x, col_y = st.columns([5, 1])
-            col_x.write(f"🗑️ {r['Giris_Tarihi']} | {r['Ad Soyad']} ({r['Toplam']:,} TL)")
-            if col_y.button("SİL", key=f"del_{i}"):
-                df = df[~((df["Ad Soyad"] == r["Ad Soyad"]) & (df["Toplam"] == r["Toplam"]))]
-                df.to_csv("rez.csv", index=False); st.rerun()
+            cx, cy = st.columns([5, 1]); cx.write(f"🗑️ {r['Giris_Tarihi']} | {r['Ad Soyad']}")
+            if cy.button("SİL", key=f"del_{i}"):
+                df = df[~((df["Ad Soyad"] == r["Ad Soyad"]) & (df["Toplam"] == r["Toplam"]))]; df.to_csv("rez.csv", index=False); st.rerun()
