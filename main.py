@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import calendar
 import os
 import urllib.parse
+from io import BytesIO
 
 # --- 1. GÖRÜNÜRLÜK (iOS & BROWSER) ---
 st.set_page_config(page_title="Villa Yönetim Paneli", layout="centered")
@@ -19,7 +20,6 @@ st.markdown("""
         display: block; background-color: #25D366; color: white !important; 
         padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; text-align: center;
     }
-    .del-btn button { background-color: #ff4b4b !important; color: white !important; border: none !important; }
     .modern-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
     .day-link { display: block; text-decoration: none; padding: 10px 0; border-radius: 10px; font-weight: bold; color: white !important; text-align: center; }
     .bos { background: #2ECC71 !important; } .dolu { background: #E74C3C !important; }
@@ -77,17 +77,18 @@ with t1:
     # Yeni Kayıt
     q_date = st.query_params.get("date", "")
     with st.expander("📝 Rezervasyon Ekle", expanded=True if q_date else False):
-        with st.form("kayit_form"):
+        with st.form("kayit_form", clear_on_submit=True):
             f_t = st.text_input("Giriş Tarihi", value=q_date)
             f_a = st.text_input("Müşteri Ad Soyad")
             f_p = st.text_input("Telefon (905...)")
             f_f = st.number_input("Gecelik Fiyat", min_value=0)
             f_g = st.number_input("Gece Sayısı", min_value=1)
             f_n = st.text_area("Notlar")
-            if st.form_submit_button("KAYDET"):
+            if st.form_submit_button("SİSTEME KAYDET"):
                 start = datetime.strptime(f_t, "%Y-%m-%d")
                 new_rows = [[(start + timedelta(days=i)).strftime("%Y-%m-%d"), f_a, f_p, f_f, f_g, f_n, "Kesin", f_f*f_g] for i in range(int(f_g))]
                 pd.concat([df[REZ_COLS], pd.DataFrame(new_rows, columns=REZ_COLS)], ignore_index=True).to_csv("rez.csv", index=False)
+                st.success("Rezervasyon kaydedildi!")
                 st.rerun()
 
 with t2:
@@ -107,46 +108,70 @@ with t2:
 
 with t3:
     st.subheader("💸 Gider Girişi")
-    with st.form("gider_f"):
-        gt, gk, ga, gu = st.date_input("Tarih"), st.selectbox("Tür", ["Temizlik", "Elektrik", "Su", "Diğer"]), st.text_input("Açıklama"), st.number_input("Tutar")
-        if st.form_submit_button("Gideri Kaydet"):
-            new_g = pd.DataFrame([[gt.strftime("%Y-%m-%d"), gk, ga, gu]], columns=GID_COLS)
-            pd.concat([df_gider, new_g], ignore_index=True).to_csv("gider.csv", index=False)
-            st.rerun()
+    # clear_on_submit=True sayesinde kaydet deyince form sıfırlanır
+    with st.form("gider_f", clear_on_submit=True):
+        gt = st.date_input("Tarih", value=datetime.now())
+        gk = st.selectbox("Kategori", ["Temizlik", "Elektrik", "Su", "Bahçe Bakımı", "Komisyon", "Diğer"])
+        ga = st.text_input("Açıklama", placeholder="Örn: Haziran elektrik faturası")
+        gu = st.number_input("Tutar (TL)", min_value=0.0)
+        
+        if st.form_submit_button("GİDERİ SİSTEME İŞLE"):
+            if gu > 0:
+                new_g = pd.DataFrame([[gt.strftime("%Y-%m-%d"), gk, ga, gu]], columns=GID_COLS)
+                pd.concat([df_gider, new_g], ignore_index=True).to_csv("gider.csv", index=False)
+                st.success(f"{ga} gideri başarıyla kaydedildi ve form sıfırlandı!")
+                # Sayfayı yenilemeye gerek yok, form zaten temizleniyor.
+            else:
+                st.error("Lütfen geçerli bir tutar girin.")
 
 with t4:
-    st.subheader(f"💰 {sec_ay} Finans")
+    st.subheader(f"💰 {sec_ay} Finans Analizi")
     m_rez = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
     ciro = m_rez["Toplam"].sum()
     m_gid = df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == ay_idx]
     top_gider = m_gid["Tutar"].sum()
     kdv = ciro * 0.20
-    st.metric("Ciro", f"{ciro:,.0f} TL")
-    st.metric("KDV", f"-{kdv:,.0f} TL")
-    st.metric("Gider", f"-{top_gider:,.0f} TL")
-    st.success(f"NET: {ciro - kdv - top_gider:,.0f} TL")
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Ciro", f"{ciro:,.0f} TL")
+    c2.metric("KDV Payı", f"-{kdv:,.0f} TL")
+    c3.metric("Giderler", f"-{top_gider:,.0f} TL")
+    st.success(f"AYLIK NET KAZANÇ: {ciro - kdv - top_gider:,.0f} TL")
 
 with t5:
-    # --- YENİ SİLME PANELİ (TAMİR EDİLDİ) ---
-    st.subheader("🗑️ Kayıt Silme Paneli")
+    st.subheader("⚙️ Yönetim ve Raporlama")
+    
+    # --- AKILLI EXCEL İNDİRME MANTIĞI ---
     if not df.empty:
-        # Rezervasyonları tekilleştirerek listele
-        del_list = df.copy().fillna("").groupby(["Ad Soyad", "Toplam"]).agg(Baslangic=("Tarih", "min")).reset_index()
+        # Verileri grup bazlı birleştir (Excel için)
+        report_df = df.copy().fillna("")
+        report_df['T_dt'] = pd.to_datetime(report_df['Tarih'])
         
-        for i, row in del_list.iterrows():
-            col1, col2 = st.columns([4, 1])
-            col1.write(f"❌ {row['Ad Soyad']} - {row['Toplam']:,} TL ({row['Baslangic']})")
-            
-            # Her satıra özel bir silme butonu
-            if col2.button("SİL", key=f"btn_{i}"):
-                # Hem ismi hem toplam tutarı tutan tüm satırları sil (Gece sayısı kadar satır silinir)
-                df = df[~((df["Ad Soyad"] == row["Ad Soyad"]) & (df["Toplam"] == row["Toplam"]))]
-                df.to_csv("rez.csv", index=False)
-                st.success(f"{row['Ad Soyad']} kaydı silindi!")
-                st.rerun()
-    else:
-        st.info("Silinecek kayıt bulunamadı.")
+        excel_data = report_df.groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Not"]).agg(
+            Giris_Tarihi=("T_dt", "min"),
+            Cikis_Tarihi=("T_dt", "max")
+        ).reset_index()
         
+        # Sütun sırasını güzelleştir
+        excel_data = excel_data[["Ad Soyad", "Giris_Tarihi", "Cikis_Tarihi", "Gece", "Toplam", "Tel", "Not"]]
+        
+        # Excel'e çevir (CSV formatında ama düzenli)
+        csv = excel_data.to_csv(index=False).encode('utf-8-sig') # Excel'de Türkçe karakter için utf-8-sig
+        
+        st.download_button(
+            label="📥 Profesyonel Müşteri Listesini İndir (Excel/CSV)",
+            data=csv,
+            file_name=f'villa_rapor_{today_str}.csv',
+            mime='text/csv'
+        )
+    
     st.divider()
-    if st.button("📥 Excel Yedeği Al"):
-        st.download_button("Dosyayı İndir", df.to_csv(index=False), "villa_yedek.csv")
+    st.subheader("🗑️ Kayıt Sil")
+    del_list = df.copy().fillna("").groupby(["Ad Soyad", "Toplam"]).agg(Baslangic=("Tarih", "min")).reset_index()
+    for i, row in del_list.iterrows():
+        c1, c2 = st.columns([4, 1])
+        c1.write(f"❌ {row['Ad Soyad']} ({row['Toplam']:,} TL)")
+        if c2.button("SİL", key=f"del_{i}"):
+            df = df[~((df["Ad Soyad"] == row["Ad Soyad"]) & (df["Toplam"] == row["Toplam"]))]
+            df.to_csv("rez.csv", index=False)
+            st.rerun()
