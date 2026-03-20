@@ -4,6 +4,51 @@ from datetime import datetime, timedelta
 import calendar
 import os
 
+# --- SAYFA AYARLARI VE DARK MODE ENGELLEYİCİ ---
+st.set_page_config(page_title="Detayvalık VIP", layout="centered")
+
+# --- ZORUNLU AYDINLIK MOD CSS ---
+st.markdown("""
+    <style>
+    /* Uygulamanın ana arka planını beyaza zorla */
+    .stApp {
+        background-color: white !important;
+        color: black !important;
+    }
+    
+    /* Sekme (Tab) yazılarını siyah yap */
+    button[data-baseweb="tab"] p {
+        color: black !important;
+    }
+
+    /* Takvim ve Finans Kartları için Net Renkler */
+    .calendar-table td, .calendar-table th {
+        color: #333 !important;
+    }
+    
+    .f-card {
+        background: #fdfdfd !important;
+        color: #1a1a1a !important;
+        border: 1px solid #eee;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    /* Input kutularının yazılarını siyah yap */
+    input {
+        color: black !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- (Geri kalan veri tabanı ve takvim kodları v9.0 ile aynıdır) ---
+# ... (Buraya v9.0 kodunun devamını yapıştırabilirsin)
+
+import streamlit as st
+import pandas as pd
+from datetime import datetime, timedelta
+import calendar
+import os
+
 # --- SAYFA AYARLARI ---
 st.set_page_config(page_title="Detayvalık VIP", layout="centered")
 
