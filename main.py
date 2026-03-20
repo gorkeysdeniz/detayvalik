@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import calendar
 import os
+import urllib.parse
 
 # --- 1. AYARLAR VE KURUMSAL TEMA ---
 st.set_page_config(page_title="Detayvalık Yönetim Paneli", layout="wide")
@@ -21,7 +22,11 @@ st.markdown("""
     .info-panel { background: #F8F4EC; border: 1px solid #D6BD98; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
     .stat-box { background: white; border: 1px solid #E5E7EB; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .stButton button { background-color: #1A3636 !important; color: white !important; border-radius: 4px !important; border: none !important; height: 45px; width: 100%; font-weight: 500; }
-    .del-btn button { background-color: #A94438 !important; height: 35px !important; }
+    /* WhatsApp Buton Stili */
+    .wa-link { 
+        display: inline-block; background-color: #25D366; color: white !important; 
+        padding: 5px 12px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: 600;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -36,9 +41,9 @@ def load_data(file, cols):
 df = load_data("rez.csv", REZ_COLS)
 df_gider = load_data("gider.csv", GID_COLS)
 
-# Müşteri bazlı özet tablo hazırlayan fonksiyon
 def get_customer_based_df(input_df):
     if input_df.empty: return input_df
+    # Müşteri bazlı gruplama: Aynı isim ve toplam tutara sahip kayıtları tek satıra indirger
     return input_df.copy().fillna("").groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Not"]).agg(Giris_Tarihi=("Tarih", "min")).reset_index()
 
 # --- 3. ANA PANEL ---
@@ -93,12 +98,21 @@ with t1:
                     st.query_params.clear(); st.rerun()
 
 with t2:
-    st.markdown("### Kayıtlı Rezervasyonlar")
-    ara = st.text_input("İsim Ara...")
+    st.markdown("### Kayıtlı Rezervasyon Listesi")
+    ara = st.text_input("Müşteri Ara...")
     if not df.empty:
         cust_df = get_customer_based_df(df)
         if ara: cust_df = cust_df[cust_df["Ad Soyad"].str.contains(ara, case=False)]
-        st.dataframe(cust_df[["Giris_Tarihi", "Ad Soyad", "Tel", "Gece", "Toplam", "Not"]], use_container_width=True, hide_index=True)
+        
+        # WhatsApp Entegrasyonlu Liste
+        for i, r in cust_df.iterrows():
+            col1, col2 = st.columns([5, 1])
+            col1.markdown(f"**{r['Giris_Tarihi']}** | {r['Ad Soyad']} | {r['Gece']} Gece | {r['Toplam']:,} TL")
+            if r['Tel']:
+                msg = urllib.parse.quote(f"Merhaba {r['Ad Soyad']}, Detayvalık rezervasyonunuz onaylanmıştır. Giriş tarihiniz: {r['Giris_Tarihi']}. Görüşmek üzere!")
+                wa_url = f"https://wa.me/{str(r['Tel']).replace(' ','').replace('+','')}?text={msg}"
+                col2.markdown(f'<a href="{wa_url}" target="_blank" class="wa-link">WhatsApp</a>', unsafe_allow_html=True)
+            st.divider()
 
 with t3:
     st.markdown("### Gider Yönetimi")
@@ -123,11 +137,9 @@ with t4:
 
 with t5:
     st.markdown("### Veri ve Sistem Yönetimi")
-    
-    # Müşteri Bazlı Excel İndirme
     if not df.empty:
         report_df = get_customer_based_df(df)
-        st.download_button("📊 Müşteri Bazlı Rapor İndir (Excel/CSV)", report_df.to_csv(index=False).encode('utf-8-sig'), "detayvalik_musteri_raporu.csv", "text/csv")
+        st.download_button("📊 Müşteri Bazlı Rapor İndir", report_df.to_csv(index=False).encode('utf-8-sig'), "detayvalik_musteri_raporu.csv", "text/csv")
     
     st.divider()
     st.markdown("### Kayıt Silme İşlemi")
@@ -136,6 +148,6 @@ with t5:
         for i, r in del_df.iterrows():
             col_x, col_y = st.columns([5, 1])
             col_x.write(f"🗑️ {r['Giris_Tarihi']} | {r['Ad Soyad']} ({r['Toplam']:,} TL)")
-            if col_y.button("SİL", key=f"del_{i}", help="Bu rezervasyonu tamamen siler"):
+            if col_y.button("SİL", key=f"del_{i}"):
                 df = df[~((df["Ad Soyad"] == r["Ad Soyad"]) & (df["Toplam"] == r["Toplam"]))]
                 df.to_csv("rez.csv", index=False); st.rerun()
