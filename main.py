@@ -20,7 +20,7 @@ st.markdown("""
     .day-link { display: block; text-decoration: none; padding: 18px 0; border-radius: 6px; font-weight: 600; color: white !important; text-align: center; }
     .bos { background: #4F6F52 !important; }
     .dolu { background: #A94438 !important; }
-    .wa-link { background-color: #25D366; color: white !important; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; margin-top: 5px; }
+    .wa-link { background-color: #25D366; color: white !important; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 13px; font-weight: 600; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -54,7 +54,7 @@ clean_df = get_clean_df(df)
 avg_stay = clean_df['Gece'].astype(float).mean() if not clean_df.empty else 0
 
 # --- 4. ARAYÜZ ---
-st.markdown('<div class="main-header">Villa Operasyon Merkezi v42.4.3</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Villa Operasyon Merkezi v42.4</div>', unsafe_allow_html=True)
 t_cal, t_rez, t_fin, t_set = st.tabs(["📅 Takvim & Özet", "📋 Rezervasyonlar", "💰 Finansal Tablo", "⚙️ Ayarlar"])
 
 # TAB 1: TAKVİM & TAKVİM ALTI DASHBOARD
@@ -82,24 +82,8 @@ with t_cal:
         target_day = df[df["Tarih"] == q_date]
         if not target_day.empty:
             info = target_day.iloc[0]
+            # BURADA TELEFON NUMARASINI EKLEDİK
             st.info(f"📍 {q_date} | Misafir: {info['Ad Soyad']} | 📞 Tel: {info['Tel']} | 💰 {info['Toplam']:,} TL")
-            
-            # --- WHATSAPP METNİ EKLEMESİ ---
-            if info['Tel']:
-                t_cl = str(info['Tel']).replace(' ','').replace('+','')
-                cikis_t = (pd.to_datetime(q_date) + timedelta(days=int(info['Gece']))).strftime("%Y-%m-%d")
-                wp_metni = (
-                    f"Merhaba {info['Ad Soyad']}, \n\n"
-                    f"Detayvalık rezervasyonunuz onaylanmıştır. ✅\n"
-                    f"📅 Giriş: {q_date}\n"
-                    f"📅 Çıkış: {cikis_t}\n"
-                    f"🌙 Süre: {info['Gece']} Gece\n"
-                    f"💰 Toplam Tutar: {info['Toplam']:,} TL\n\n"
-                    f"Konum ve asistan rehberimiz için: https://detayvalik.io\n"
-                    f"İyi tatiller dileriz! 🏡"
-                )
-                encoded_msg = urllib.parse.quote(wp_metni)
-                st.markdown(f'<a href="https://wa.me/{t_cl}?text={encoded_msg}" target="_blank" class="wa-link">📱 WhatsApp Onay Mesajı Gönder</a>', unsafe_allow_html=True)
         else:
             with st.form("yeni_rez"):
                 st.write(f"📝 **{q_date}** Yeni Kayıt")
@@ -111,6 +95,7 @@ with t_cal:
                     pd.concat([df, pd.DataFrame(new, columns=df.columns)], ignore_index=True).to_csv("rez.csv", index=False); st.rerun()
 
     st.divider()
+    # DASHBOARD KISMI (TAKVİM ALTI)
     st.subheader(f"📊 {sec_ay} Ayı Durum Özeti")
     d1, d2, d3, d4 = st.columns(4)
     d1.markdown(f'<div class="stat-box"><small>Doluluk Oranı</small><br><b>%{occ_rate:.1f}</b></div>', unsafe_allow_html=True)
@@ -118,7 +103,7 @@ with t_cal:
     d3.markdown(f'<div class="stat-box"><small>Boş Gün Sayısı</small><br><b style="color:#A94438;">{empty_count} Gün</b></div>', unsafe_allow_html=True)
     d4.markdown(f'<div class="stat-box"><small>Ayın Bitmesine</small><br><b>{max(0, (month_days - now.day))} Gün</b></div>', unsafe_allow_html=True)
 
-# TAB 2: REZERVASYONLAR
+# TAB 2: REZERVASYONLAR (LİSTE VE TELEFON)
 with t_rez:
     search = st.text_input("🔍 İsim veya Tel Ara...")
     if not df.empty:
@@ -126,6 +111,7 @@ with t_rez:
         if search: r_list = r_list[r_list['Ad Soyad'].str.contains(search, case=False) | r_list['Tel'].astype(str).str.contains(search)]
         for i, r in r_list.iterrows():
             c_a, c_b = st.columns([4, 2])
+            # BURADA DA TELEFON NUMARASINI GÖRÜNÜR YAPTIK
             c_a.markdown(f"**{r['Ad Soyad']}** | 📞 {r['Tel']}\n📅 {r['Giris_Tarihi']} ➔ {r['Cikis_Tarihi']} | 💰 {r['Toplam']:,} TL")
             if r['Tel']:
                 t_cl = str(r['Tel']).replace(' ','').replace('+','')
@@ -133,7 +119,7 @@ with t_rez:
                 c_b.markdown(f'<a href="https://wa.me/{t_cl}?text={msg}" target="_blank" class="wa-link">WhatsApp</a>', unsafe_allow_html=True)
             st.divider()
 
-# TAB 3: FİNANSAL TABLO
+# TAB 3: FİNANSAL TABLO (BÜTÜNCÜL)
 with t_fin:
     m_fin = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
     b_ciro = m_fin["Toplam"].sum()
@@ -145,7 +131,7 @@ with t_fin:
     st.subheader(f"💰 {sec_ay} Finansal Özeti")
     f1, f2, f3, f4 = st.columns(4)
     f1.metric("Brüt Gelir", f"{b_ciro:,.0f} TL")
-    f2.metric("Vergiler", f"-{(v_kdv + v_konak):,.0f} TL", delta_color="inverse")
+    f2.metric("Vergiler (Toplam)", f"-{(v_kdv + v_konak):,.0f} TL", delta_color="inverse")
     f3.metric("Giderler", f"-{t_gider:,.0f} TL", delta_color="inverse")
     f4.metric("NET KÂR", f"{(b_ciro - v_kdv - v_konak - t_gider):,.0f} TL")
     
