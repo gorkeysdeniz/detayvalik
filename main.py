@@ -20,7 +20,7 @@ st.markdown("""
     .day-link { display: block; text-decoration: none; padding: 18px 0; border-radius: 6px; font-weight: 600; color: white !important; text-align: center; }
     .bos { background: #4F6F52 !important; }
     .dolu { background: #A94438 !important; }
-    .wa-link { background-color: #25D366; color: white !important; padding: 8px 15px; border-radius: 5px; text-decoration: none; font-size: 13px; font-weight: 600; }
+    .wa-link { background-color: #25D366; color: white !important; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -40,29 +40,25 @@ def get_clean_df(input_df):
     res['Cikis_Tarihi'] = (res['Giris_DT'] + pd.to_timedelta(res['Gece'].astype(int), unit='D')).dt.strftime('%Y-%m-%d')
     return res.sort_values(by="Giris_DT", ascending=False)
 
-# --- 3. ANALİTİK HESAPLAR ---
-now = datetime.now()
-curr_month, curr_year = now.month, now.year
-month_days = calendar.monthrange(curr_year, curr_month)[1]
-df['DT'] = pd.to_datetime(df['Tarih'], errors='coerce')
-month_df = df[(df['DT'].dt.month == curr_month) & (df['DT'].dt.year == curr_year)]
-booked_count = len(month_df)
-empty_count = month_days - booked_count
-occ_rate = (booked_count / month_days) * 100 if month_days > 0 else 0
-
-clean_df = get_clean_df(df)
-avg_stay = clean_df['Gece'].astype(float).mean() if not clean_df.empty else 0
-
-# --- 4. ARAYÜZ ---
-st.markdown('<div class="main-header">Villa Operasyon Merkezi v42.4</div>', unsafe_allow_html=True)
+# --- 3. ARAYÜZ ---
+st.markdown('<div class="main-header">Villa Operasyon Merkezi v42.4.4</div>', unsafe_allow_html=True)
 t_cal, t_rez, t_fin, t_set = st.tabs(["📅 Takvim & Özet", "📋 Rezervasyonlar", "💰 Finansal Tablo", "⚙️ Ayarlar"])
 
-# TAB 1: TAKVİM & TAKVİM ALTI DASHBOARD
+# TAB 1: TAKVİM & DİNAMİK DASHBOARD
 with t_cal:
     aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
     c1, c2 = st.columns([2, 1])
-    sec_ay = c1.selectbox("Ay Seçin", aylar, index=curr_month-1)
+    sec_ay = c1.selectbox("Ay Seçin", aylar, index=datetime.now().month-1)
     ay_idx = aylar.index(sec_ay) + 1
+    
+    # DASHBOARD HESAPLAMALARI (SEÇİLEN AYA GÖRE)
+    month_days = calendar.monthrange(2026, ay_idx)[1]
+    df['DT'] = pd.to_datetime(df['Tarih'], errors='coerce')
+    # Dinamik Filtreleme: Dashboard artık bu seçilen aya bakıyor
+    month_df = df[(df['DT'].dt.month == ay_idx) & (df['DT'].dt.year == 2026)]
+    booked_count = month_df['Tarih'].nunique()
+    empty_count = month_days - booked_count
+    occ_rate = (booked_count / month_days) * 100 if month_days > 0 else 0
     
     cal_html = '<table class="modern-table"><tr><th>Pt</th><th>Sa</th><th>Ça</th><th>Pe</th><th>Cu</th><th>Ct</th><th>Pz</th></tr>'
     for week in calendar.monthcalendar(2026, ay_idx):
@@ -82,8 +78,31 @@ with t_cal:
         target_day = df[df["Tarih"] == q_date]
         if not target_day.empty:
             info = target_day.iloc[0]
-            # BURADA TELEFON NUMARASINI EKLEDİK
             st.info(f"📍 {q_date} | Misafir: {info['Ad Soyad']} | 📞 Tel: {info['Tel']} | 💰 {info['Toplam']:,} TL")
+            
+            if info['Tel']:
+                t_cl = str(info['Tel']).replace(' ','').replace('+','')
+                cikis_t = (pd.to_datetime(q_date) + timedelta(days=int(info['Gece']))).strftime("%d.%m.%Y")
+                giris_t_format = pd.to_datetime(q_date).strftime("%d.%m.%Y")
+                
+                # --- ÖZEL KİRALAMA METNİ (KURALLAR VE ÜCRET DAHİL) ---
+                wp_metni = (
+                    f"Merhaba {info['Ad Soyad']}, \n\n"
+                    f"Detayvalık konaklama rezervasyonunuz onaylanmıştır! ✅\n\n"
+                    f"📋 *REZERVASYON DETAYLARI*\n"
+                    f"📅 Giriş Tarihi: {giris_t_format} (Saat 14:00)\n"
+                    f"📅 Çıkış Tarihi: {cikis_t} (Saat 11:00)\n"
+                    f"🌙 Konaklama Süresi: {info['Gece']} Gece\n"
+                    f"💰 Toplam Konaklama Bedeli: {info['Toplam']:,} TL\n\n"
+                    f"📝 *EV KURALLARIMIZ*\n"
+                    f"• Ev içerisinde sigara içilmemesini rica ederiz.🚭\n"
+                    f"• Evcil hayvan kabul edilmemektedir.🐾\n"
+                    f"• Gece 24:00'den sonra çevre rahatsızlığı adına yüksek ses yasağı mevcuttur.🤫\n\n"
+                    f"📍 Konum ve Dijital Rehberimiz: https://detayvalik.io\n\n"
+                    f"Şimdiden keyifli tatiller dileriz! 🏡✨"
+                )
+                encoded_msg = urllib.parse.quote(wp_metni)
+                st.markdown(f'<a href="https://wa.me/{t_cl}?text={encoded_msg}" target="_blank" class="wa-link">📱 WhatsApp Kiralama Metni Gönder</a>', unsafe_allow_html=True)
         else:
             with st.form("yeni_rez"):
                 st.write(f"📝 **{q_date}** Yeni Kayıt")
@@ -95,15 +114,17 @@ with t_cal:
                     pd.concat([df, pd.DataFrame(new, columns=df.columns)], ignore_index=True).to_csv("rez.csv", index=False); st.rerun()
 
     st.divider()
-    # DASHBOARD KISMI (TAKVİM ALTI)
     st.subheader(f"📊 {sec_ay} Ayı Durum Özeti")
     d1, d2, d3, d4 = st.columns(4)
     d1.markdown(f'<div class="stat-box"><small>Doluluk Oranı</small><br><b>%{occ_rate:.1f}</b></div>', unsafe_allow_html=True)
-    d2.markdown(f'<div class="stat-box"><small>Ort. Geceleme</small><br><b>{avg_stay:.1f}</b></div>', unsafe_allow_html=True)
-    d3.markdown(f'<div class="stat-box"><small>Boş Gün Sayısı</small><br><b style="color:#A94438;">{empty_count} Gün</b></div>', unsafe_allow_html=True)
-    d4.markdown(f'<div class="stat-box"><small>Ayın Bitmesine</small><br><b>{max(0, (month_days - now.day))} Gün</b></div>', unsafe_allow_html=True)
+    d2.markdown(f'<div class="stat-box"><small>Boş Gün Sayısı</small><br><b style="color:#A94438;">{empty_count} Gün</b></div>', unsafe_allow_html=True)
+    d3.markdown(f'<div class="stat-box"><small>Toplam Geceleme</small><br><b>{booked_count} Gece</b></div>', unsafe_allow_html=True)
+    # Kalan gün hesabı eğer seçilen ay içinde bulunduğumuz aysa anlamlıdır
+    this_month_days = calendar.monthrange(datetime.now().year, datetime.now().month)[1]
+    kalan_gun = max(0, (this_month_days - datetime.now().day)) if ay_idx == datetime.now().month else month_days
+    d4.markdown(f'<div class="stat-box"><small>Ay Sonu Beklentisi</small><br><b>{month_days} Gün</b></div>', unsafe_allow_html=True)
 
-# TAB 2: REZERVASYONLAR (LİSTE VE TELEFON)
+# TAB 2: REZERVASYONLAR
 with t_rez:
     search = st.text_input("🔍 İsim veya Tel Ara...")
     if not df.empty:
@@ -111,15 +132,15 @@ with t_rez:
         if search: r_list = r_list[r_list['Ad Soyad'].str.contains(search, case=False) | r_list['Tel'].astype(str).str.contains(search)]
         for i, r in r_list.iterrows():
             c_a, c_b = st.columns([4, 2])
-            # BURADA DA TELEFON NUMARASINI GÖRÜNÜR YAPTIK
             c_a.markdown(f"**{r['Ad Soyad']}** | 📞 {r['Tel']}\n📅 {r['Giris_Tarihi']} ➔ {r['Cikis_Tarihi']} | 💰 {r['Toplam']:,} TL")
             if r['Tel']:
                 t_cl = str(r['Tel']).replace(' ','').replace('+','')
-                msg = urllib.parse.quote(f"Onay: {r['Ad Soyad']}, {r['Giris_Tarihi']} girişli rezervasyonunuz onaylanmıştır.")
+                # Liste kısmındaki kısa mesajı da güncelledim
+                msg = urllib.parse.quote(f"Merhaba {r['Ad Soyad']}, {r['Giris_Tarihi']} girişli rezervasyonunuz onaylanmıştır. Detaylar için dijital asistanımız: https://detayvalik.io")
                 c_b.markdown(f'<a href="https://wa.me/{t_cl}?text={msg}" target="_blank" class="wa-link">WhatsApp</a>', unsafe_allow_html=True)
             st.divider()
 
-# TAB 3: FİNANSAL TABLO (BÜTÜNCÜL)
+# TAB 3: FİNANSAL TABLO
 with t_fin:
     m_fin = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
     b_ciro = m_fin["Toplam"].sum()
@@ -131,7 +152,7 @@ with t_fin:
     st.subheader(f"💰 {sec_ay} Finansal Özeti")
     f1, f2, f3, f4 = st.columns(4)
     f1.metric("Brüt Gelir", f"{b_ciro:,.0f} TL")
-    f2.metric("Vergiler (Toplam)", f"-{(v_kdv + v_konak):,.0f} TL", delta_color="inverse")
+    f2.metric("Vergiler", f"-{(v_kdv + v_konak):,.0f} TL", delta_color="inverse")
     f3.metric("Giderler", f"-{t_gider:,.0f} TL", delta_color="inverse")
     f4.metric("NET KÂR", f"{(b_ciro - v_kdv - v_konak - t_gider):,.0f} TL")
     
