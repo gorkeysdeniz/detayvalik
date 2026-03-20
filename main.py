@@ -20,7 +20,7 @@ st.markdown("""
     .day-link { display: block; text-decoration: none; padding: 18px 0; border-radius: 6px; font-weight: 600; color: white !important; text-align: center; }
     .bos { background: #4F6F52 !important; }
     .dolu { background: #A94438 !important; }
-    .wa-link { background-color: #25D366; color: white !important; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: 600; display: inline-block; margin-top: 10px; }
+    .wa-link { background-color: #25D366; color: white !important; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -50,11 +50,14 @@ booked_count = len(month_df)
 empty_count = month_days - booked_count
 occ_rate = (booked_count / month_days) * 100 if month_days > 0 else 0
 
+clean_df = get_clean_df(df)
+avg_stay = clean_df['Gece'].astype(float).mean() if not clean_df.empty else 0
+
 # --- 4. ARAYÜZ ---
-st.markdown('<div class="main-header">Villa Operasyon Merkezi v42.4.2</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">Villa Operasyon Merkezi v42.4.3</div>', unsafe_allow_html=True)
 t_cal, t_rez, t_fin, t_set = st.tabs(["📅 Takvim & Özet", "📋 Rezervasyonlar", "💰 Finansal Tablo", "⚙️ Ayarlar"])
 
-# TAB 1: TAKVİM
+# TAB 1: TAKVİM & TAKVİM ALTI DASHBOARD
 with t_cal:
     aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
     c1, c2 = st.columns([2, 1])
@@ -81,7 +84,7 @@ with t_cal:
             info = target_day.iloc[0]
             st.info(f"📍 {q_date} | Misafir: {info['Ad Soyad']} | 📞 Tel: {info['Tel']} | 💰 {info['Toplam']:,} TL")
             
-            # BURASI YENİ: WhatsApp Onay Metni Hazırlama
+            # --- WHATSAPP METNİ EKLEMESİ ---
             if info['Tel']:
                 t_cl = str(info['Tel']).replace(' ','').replace('+','')
                 cikis_t = (pd.to_datetime(q_date) + timedelta(days=int(info['Gece']))).strftime("%Y-%m-%d")
@@ -90,10 +93,10 @@ with t_cal:
                     f"Detayvalık rezervasyonunuz onaylanmıştır. ✅\n"
                     f"📅 Giriş: {q_date}\n"
                     f"📅 Çıkış: {cikis_t}\n"
-                    f"🌙 Toplam: {info['Gece']} Gece\n"
-                    f"💰 Tutar: {info['Toplam']:,} TL\n\n"
-                    f"Konum ve detaylı asistan rehberimiz için: https://detayvalik.io\n"
-                    f"Şimdiden iyi tatiller dileriz! 🏡"
+                    f"🌙 Süre: {info['Gece']} Gece\n"
+                    f"💰 Toplam Tutar: {info['Toplam']:,} TL\n\n"
+                    f"Konum ve asistan rehberimiz için: https://detayvalik.io\n"
+                    f"İyi tatiller dileriz! 🏡"
                 )
                 encoded_msg = urllib.parse.quote(wp_metni)
                 st.markdown(f'<a href="https://wa.me/{t_cl}?text={encoded_msg}" target="_blank" class="wa-link">📱 WhatsApp Onay Mesajı Gönder</a>', unsafe_allow_html=True)
@@ -107,4 +110,63 @@ with t_cal:
                     new = [[(start+timedelta(days=i)).strftime("%Y-%m-%d"), f_ad, f_tel, f_fiy, f_gec, "", "Kesin", f_fiy*f_gec] for i in range(int(f_gec))]
                     pd.concat([df, pd.DataFrame(new, columns=df.columns)], ignore_index=True).to_csv("rez.csv", index=False); st.rerun()
 
-# (Kodun geri kalanı Tab 2, Tab 3 ve Tab 4 senin orijinal kodunun aynısı kalsın)
+    st.divider()
+    st.subheader(f"📊 {sec_ay} Ayı Durum Özeti")
+    d1, d2, d3, d4 = st.columns(4)
+    d1.markdown(f'<div class="stat-box"><small>Doluluk Oranı</small><br><b>%{occ_rate:.1f}</b></div>', unsafe_allow_html=True)
+    d2.markdown(f'<div class="stat-box"><small>Ort. Geceleme</small><br><b>{avg_stay:.1f}</b></div>', unsafe_allow_html=True)
+    d3.markdown(f'<div class="stat-box"><small>Boş Gün Sayısı</small><br><b style="color:#A94438;">{empty_count} Gün</b></div>', unsafe_allow_html=True)
+    d4.markdown(f'<div class="stat-box"><small>Ayın Bitmesine</small><br><b>{max(0, (month_days - now.day))} Gün</b></div>', unsafe_allow_html=True)
+
+# TAB 2: REZERVASYONLAR
+with t_rez:
+    search = st.text_input("🔍 İsim veya Tel Ara...")
+    if not df.empty:
+        r_list = get_clean_df(df)
+        if search: r_list = r_list[r_list['Ad Soyad'].str.contains(search, case=False) | r_list['Tel'].astype(str).str.contains(search)]
+        for i, r in r_list.iterrows():
+            c_a, c_b = st.columns([4, 2])
+            c_a.markdown(f"**{r['Ad Soyad']}** | 📞 {r['Tel']}\n📅 {r['Giris_Tarihi']} ➔ {r['Cikis_Tarihi']} | 💰 {r['Toplam']:,} TL")
+            if r['Tel']:
+                t_cl = str(r['Tel']).replace(' ','').replace('+','')
+                msg = urllib.parse.quote(f"Onay: {r['Ad Soyad']}, {r['Giris_Tarihi']} girişli rezervasyonunuz onaylanmıştır.")
+                c_b.markdown(f'<a href="https://wa.me/{t_cl}?text={msg}" target="_blank" class="wa-link">WhatsApp</a>', unsafe_allow_html=True)
+            st.divider()
+
+# TAB 3: FİNANSAL TABLO
+with t_fin:
+    m_fin = df[pd.to_datetime(df["Tarih"], errors='coerce').dt.month == ay_idx].drop_duplicates(["Ad Soyad", "Toplam"])
+    b_ciro = m_fin["Toplam"].sum()
+    v_kdv = b_ciro - (b_ciro / (1 + KDV_ORANI))
+    v_konak = b_ciro - (b_ciro / (1 + TURIZM_VERGISI))
+    m_gid = df_gider[pd.to_datetime(df_gider["Tarih"], errors='coerce').dt.month == ay_idx]
+    t_gider = m_gid["Tutar"].sum()
+    
+    st.subheader(f"💰 {sec_ay} Finansal Özeti")
+    f1, f2, f3, f4 = st.columns(4)
+    f1.metric("Brüt Gelir", f"{b_ciro:,.0f} TL")
+    f2.metric("Vergiler", f"-{(v_kdv + v_konak):,.0f} TL", delta_color="inverse")
+    f3.metric("Giderler", f"-{t_gider:,.0f} TL", delta_color="inverse")
+    f4.metric("NET KÂR", f"{(b_ciro - v_kdv - v_konak - t_gider):,.0f} TL")
+    
+    st.divider()
+    gx, gy = st.columns([1, 2])
+    with gx:
+        with st.form("g_add", clear_on_submit=True):
+            st.write("**Gider Ekle**")
+            gt, gk, gu = st.date_input("Tarih"), st.selectbox("Tür", ["Temizlik", "Fatura", "Bakım", "Diğer"]), st.number_input("Tutar")
+            ga = st.text_input("Açıklama")
+            if st.form_submit_button("Kaydet"):
+                pd.concat([df_gider, pd.DataFrame([[gt.strftime("%Y-%m-%d"), gk, ga, gu]], columns=df_gider.columns)], ignore_index=True).to_csv("gider.csv", index=False); st.rerun()
+    with gy:
+        st.write("**Gider Detayları**")
+        st.dataframe(m_gid, use_container_width=True, hide_index=True)
+
+# TAB 4: AYARLAR
+with t_set:
+    st.download_button("Excel Yedek Al", get_clean_df(df).to_csv(index=False).encode('utf-8-sig'), "yedek.csv")
+    if not df.empty:
+        for i, r in get_clean_df(df).iterrows():
+            cx, cy = st.columns([5, 1]); cx.write(f"{r['Giris_Tarihi']} | {r['Ad Soyad']}")
+            if cy.button("Sil", key=f"del_{i}"):
+                df = df[~((df["Ad Soyad"] == r["Ad Soyad"]) & (df["Toplam"] == r["Toplam"]))]; df.to_csv("rez.csv", index=False); st.rerun()
