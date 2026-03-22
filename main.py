@@ -6,7 +6,7 @@ import calendar
 import urllib.parse
 
 # --- 1. AYARLAR & SABİT TASARIM ---
-st.set_page_config(page_title="Detayvalık Operasyon v42.6.3", layout="wide", page_icon="🏡")
+st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
 
 st.markdown("""
     <style>
@@ -54,7 +54,7 @@ def save_data(df_to_save):
 df = load_data()
 
 # --- 3. ANA PANEL ---
-st.markdown('<div class="main-header">🏡 Detayvalık Villa Operasyon v42.6.3</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🏡 Villa Yönetim Paneli (Beta 1.0)</div>', unsafe_allow_html=True)
 t_cal, t_rez, t_fin, t_set = st.tabs(["📅 Takvim & İşlemler", "📋 Rezervasyon Listesi", "💰 Finansal Tablo", "⚙️ Ayarlar"])
 
 # --- TAB 1: TAKVİM & İŞLEMLER ---
