@@ -247,7 +247,80 @@ with t_rez:
                     save_data(df)
                     st.rerun()
 
-with t_fin: st.write("Finansal veriler aktif.")
+# --- TAB 3: FİNANSAL TABLO (NET KAR ODAKLI) ---
+with t_fin:
+    st.subheader(f"💰 {sec_ay} Ayı Finansal Analizi")
+
+    # 1. GİDER DOSYASI KONTROLÜ VE YÜKLEME
+    GIDER_FILE = "gider.csv"
+    COL_GIDER = ["Tarih", "Kategori", "Aciklama", "Tutar"]
+    if not os.path.exists(GIDER_FILE):
+        pd.DataFrame(columns=COL_GIDER).to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+    
+    try:
+        df_gider = pd.read_csv(GIDER_FILE, sep=';', encoding='utf-8-sig')
+    except:
+        df_gider = pd.DataFrame(columns=COL_GIDER)
+
+    # 2. AY BAZLI HESAPLAMALAR
+    # O ayın rezervasyon gelirleri
+    m_rez = df[pd.to_datetime(df['Tarih'], errors='coerce').dt.month == ay_idx]
+    brut_gelir = m_rez.drop_duplicates(["Ad Soyad", "Toplam"])["Toplam"].sum()
+    
+    # Vergi Kalemleri (%10 KDV + %2 Konaklama Vergisi = %12)
+    vergi_toplam = brut_gelir * 0.12
+    
+    # O ayın giderleri
+    df_gider['Tarih_DT'] = pd.to_datetime(df_gider['Tarih'], errors='coerce')
+    m_gider = df_gider[df_gider['Tarih_DT'].dt.month == ay_idx]
+    toplam_gider = m_gider["Tutar"].sum()
+    
+    # NET KAR HESABI
+    net_kar = brut_gelir - vergi_toplam - toplam_gider
+
+    # 3. FİNANSAL KARTLAR (Dashboard Tasarımı)
+    st.markdown('<div class="stat-container">', unsafe_allow_html=True)
+    f1, f2, f3 = st.columns(3)
+    f1.markdown(f'<div class="stat-box"><small>Brüt Ciro</small><br><b style="font-size:18px;">{brut_gelir:,.0f} TL</b></div>', unsafe_allow_html=True)
+    f2.markdown(f'<div class="stat-box"><small>Vergi Tahakkuku (%12)</small><br><b style="color:#ef4444; font-size:18px;">-{vergi_toplam:,.0f} TL</b></div>', unsafe_allow_html=True)
+    f3.markdown(f'<div class="stat-box"><small>Toplam Gider</small><br><b style="color:#ef4444; font-size:18px;">-{toplam_gider:,.0f} TL</b></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # NET KAR VURGUSU
+    st.markdown(f"""
+        <div style="background:#1e293b; color:white; padding:20px; border-radius:15px; text-align:center; margin-top:15px; border-bottom: 5px solid #10b981;">
+            <small style="opacity:0.8;">TÜM GİDERLER VE VERGİLER SONRASI</small>
+            <h2 style="margin:0; color:#10b981;">KALAN NET KAR: {net_kar:,.0f} TL</h2>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # 4. GİDER GİRİŞ FORMU
+    st.subheader("🧾 Yeni Gider İşle")
+    with st.form("gider_form_v3", clear_on_submit=True):
+        c1, c2, c3 = st.columns([1, 2, 1])
+        g_tarih = c1.date_input("Harcama Tarihi")
+        g_aciklama = c2.text_input("Gider Açıklaması (Fatura, Tamirat, Temizlik vb.)")
+        g_tutar = c3.number_input("Tutar (TL)", min_value=0)
+        
+        if st.form_submit_button("💰 GİDERİ KAYDET"):
+            yeni_gider = pd.DataFrame([{
+                "Tarih": g_tarih.strftime("%Y-%m-%d"),
+                "Kategori": "Genel",
+                "Aciklama": g_aciklama,
+                "Tutar": g_tutar
+            }])
+            # Tarih_DT sütununu kaydetmeden önce düşür (CSV temiz kalsın)
+            df_final_gider = pd.concat([df_gider.drop(columns=['Tarih_DT'], errors='ignore'), yeni_gider], ignore_index=True)
+            df_final_gider.to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+            st.success("Gider sisteme işlendi!")
+            st.rerun()
+
+    # 5. AYIN GİDER DÖKÜMÜ
+    if not m_gider.empty:
+        st.write(f"📂 **{sec_ay} Ayı Gider Detayları**")
+        st.dataframe(m_gider[['Tarih', 'Aciklama', 'Tutar']], use_container_width=True, hide_index=True)
 with t_set:
     if st.button("🔴 SİSTEMİ SIFIRLA"):
         pd.DataFrame(columns=COL_REZ).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
