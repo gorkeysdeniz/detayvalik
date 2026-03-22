@@ -164,11 +164,93 @@ with t_cal:
     """, unsafe_allow_html=True)
 
 # --- DİĞER SEKMELER (DOKUNULMADI) ---
+# --- TAB 2: REZERVASYON LİSTESİ (BU KISMI DEĞİŞTİR) ---
 with t_rez:
-    st.subheader("📋 Kayıtlı Tüm Günler")
-    st.dataframe(df, use_container_width=True)
-    csv_excel = df.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-    st.download_button("📥 Excel Olarak İndir", data=csv_excel, file_name="Detayvalik_Liste.csv", mime='text/csv')
+    if df.empty:
+        st.info("Kayıtlı rezervasyon bulunmuyor.")
+    else:
+        # 1. VERİ TEMİZLİĞİ VE GRUPLAMA (Kişi Bazlı Özet)
+        df_group = df.copy()
+        # Tarih formatını güvenli bir şekilde çevir
+        df_group['Tarih_DT'] = pd.to_datetime(df_group['Tarih'], errors='coerce')
+        df_group = df_group.dropna(subset=['Tarih_DT'])
+        
+        # Kişi, Telefon ve Toplam Ücret üzerinden grupla
+        # Bu sayede her günü tek satırda 'Giriş-Çıkış' olarak birleştirir
+        summary = df_group.groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Kapora", "Ucret"]).agg(
+            Giris=('Tarih_DT', 'min'),
+            Cikis=('Tarih_DT', 'max')
+        ).reset_index()
+        
+        # Çıkış tarihini konaklama mantığına göre bir gün sonrası (sabahı) yap
+        summary['Cikis_Sabah'] = summary['Cikis'] + timedelta(days=1)
+        # Liste görünümü için tarihleri formatla
+        summary['Giris_Format'] = summary['Giris'].dt.strftime('%d.%m.%Y')
+        summary['Cikis_Format'] = summary['Cikis_Sabah'].dt.strftime('%d.%m.%Y')
+
+        # 2. ÜST METRİKLER (Görsel Kartlar)
+        st.markdown('<div class="stat-container">', unsafe_allow_html=True)
+        m1, m2, m3 = st.columns(3)
+        m1.markdown(f'<div class="stat-box"><small>Toplam Rezervasyon</small><br><b>{len(summary)} Grup</b></div>', unsafe_allow_html=True)
+        m2.markdown(f'<div class="stat-box"><small>Bekleyen Kaporalar</small><br><b style="color:#ef4444;">{len(summary[summary["Kapora"]=="Ödenmedi"])} Adet</b></div>', unsafe_allow_html=True)
+        m3.markdown(f'<div class="stat-box"><small>Toplam Beklenen Ciro</small><br><b>{summary["Toplam"].sum():,.0f} TL</b></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # 3. ARAMA & FİLTRELEME
+        search = st.text_input("🔍 Misafir Adı veya Telefon Numarası ile Anlık Ara", "")
+        if search:
+            summary = summary[
+                summary['Ad Soyad'].str.contains(search, case=False, na=False) | 
+                summary['Tel'].astype(str).contains(search, na=False)
+            ]
+
+        # 4. KİŞİ BAZLI EXCEL İNDİRME (Sütunlu Format)
+        # Excel için düzgün bir tablo hazırla
+        excel_out = summary[['Ad Soyad', 'Tel', 'Giris_Format', 'Cikis_Format', 'Gece', 'Ucret', 'Toplam', 'Kapora']].copy()
+        excel_out.columns = ['Ad Soyad', 'Telefon', 'Giriş Tarihi', 'Çıkış Tarihi', 'Gece Sayısı', 'Günlük Ücret', 'Toplam Tutar', 'Ödeme Durumu']
+        
+        # sep=';' ve utf-8-sig sayesinde Excel'de sütunlar ayrılmış ve Türkçe karakterler düzgün gelir
+        csv_excel = excel_out.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+        
+        st.download_button(
+            label="📥 Kişi Bazlı Excel Listesini İndir",
+            data=csv_excel,
+            file_name=f"Detayvalik_Ozet_Liste_{datetime.now().strftime('%d_%m')}.csv",
+            mime='text/csv',
+        )
+
+        st.divider()
+
+        # 5. REZERVASYON KARTLARI VE HIZLI SİLME
+        st.subheader("📋 Mevcut Rezervasyonlar")
+        for idx, row in summary.iterrows():
+            with st.container():
+                # Görsel Kart Tasarımı
+                st.markdown(f"""
+                <div class="rez-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="font-size:18px;">👤 {row['Ad Soyad']}</b>
+                        <span style="color:#64748b; font-size:14px;">📞 {row['Tel']}</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px; font-size:14px;">
+                        <div>📅 <b>Giriş:</b> {row['Giris_Format']}</div>
+                        <div>📅 <b>Çıkış:</b> {row['Cikis_Format']}</div>
+                        <div>🌙 <b>Süre:</b> {row['Gece']} Gece</div>
+                        <div>💰 <b>Toplam:</b> {row['Toplam']:,} TL</div>
+                        <div style="grid-column: span 2; color: {'#ef4444' if row['Kapora']=='Ödenmedi' else '#10b981'}; font-weight:bold;">
+                            💳 Ödeme: {row['Kapora']}
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Tek Tıkla Tüm Rezervasyonu Silme
+                if st.button(f"🗑️ {row['Ad Soyad']} Rezervasyonunu Sil", key=f"del_{idx}"):
+                    # Ana df'den bu kişiye ve telefona ait TÜM satırları temizle
+                    df = df[~((df['Ad Soyad'] == row['Ad Soyad']) & (df['Tel'] == row['Tel']))]
+                    save_data(df)
+                    st.success(f"{row['Ad Soyad']} ait tüm kayıtlar silindi.")
+                    st.rerun()
 
 with t_fin: st.write("Finansal veriler aktif.")
 with t_set:
