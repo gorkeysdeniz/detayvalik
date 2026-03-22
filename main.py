@@ -320,8 +320,29 @@ with t_fin:
     if not m_gider_fin.empty:
         st.write("### Gider Detayları")
         st.dataframe(m_gider_fin[['Tarih', 'Aciklama', 'Tutar']], use_container_width=True, hide_index=True)
+# --- TAB 4: AYARLAR (GÜNCELLENMİŞ & GÜVENLİ) ---
 with t_set:
-    if st.button("🔴 SİSTEMİ SIFIRLA"):
+    st.subheader("📂 Dosya & Yedekleme Yönetimi")
+    
+    # Gider Dosyasını İndir (Bulutta dosyayı görebilmen için)
+    if os.path.exists("gider.csv"):
+        with open("gider.csv", "rb") as f:
+            st.download_button(
+                label="📥 Gider Listesini (Excel/CSV) İndir",
+                data=f,
+                file_name=f"Detayvalik_Gider_Yedek_{datetime.now().strftime('%d_%m')}.csv",
+                mime="text/csv",
+                key="down_gider_btn"
+            )
+    
+    st.divider()
+    
+    # Dosya Sıfırlama (Tam Kontrol)
+    st.warning("⚠️ Dikkat: Aşağıdaki buton tüm verileri kalıcı olarak siler.")
+    if st.button("🔴 TÜM SİSTEMİ SIFIRLA (REZ + GİDER)"):
+        # Rezervasyonları Sıfırla
         pd.DataFrame(columns=COL_REZ).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
+        # Giderleri Sıfırla
+        pd.DataFrame(columns=["Tarih", "Kategori", "Aciklama", "Tutar"]).to_csv("gider.csv", index=False, sep=';', encoding='utf-8-sig')
+        st.success("Tüm veriler temizlendi!")
         st.rerun()
-        
