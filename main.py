@@ -9,7 +9,7 @@ import urllib.parse
 KDV_ORANI = 0.10      
 TURIZM_VERGISI = 0.02 
 
-st.set_page_config(page_title="Detayvalık Operasyon v42.5.4", layout="wide", page_icon="🏡")
+st.set_page_config(page_title="Detayvalık Operasyon v42.5.5", layout="wide", page_icon="🏡")
 
 # Modern Tasarım CSS
 st.markdown("""
@@ -50,7 +50,7 @@ df = load_data(REZ_FILE, COL_REZ)
 df_gider = load_data(GIDER_FILE, COL_GIDER)
 
 # --- 3. ANA PANEL ---
-st.markdown('<div class="main-header">🏡 Detayvalık Villa Operasyon v42.5.4</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🏡 Detayvalık Villa Operasyon v42.5.5</div>', unsafe_allow_html=True)
 t_cal, t_rez, t_fin, t_set = st.tabs(["📅 Takvim & İşlemler", "📋 Rezervasyon Listesi", "💰 Finansal Tablo", "⚙️ Ayarlar"])
 
 # --- TAB 1: TAKVİM & İŞLEMLER ---
@@ -81,15 +81,76 @@ with t_cal:
         rez_info = df[df["Tarih"] == selected_date]
         
         if not rez_info.empty:
-            # DOLU GÜN: Full Detay Bilgi Kartı
             r = rez_info.iloc[0]
-            # Giriş tarihinden itibaren gece sayısı kadar ekleyerek çıkış tarihini bulalım
-            giris_dt = datetime.strptime(r['Tarih'], "%Y-%m-%d")
-            cikis_dt = giris_dt + timedelta(days=int(r['Gece']))
-            
+            try:
+                giris_dt = datetime.strptime(str(r['Tarih']), "%Y-%m-%d")
+                cikis_dt = giris_dt + timedelta(days=int(r['Gece']))
+                cikis_str = cikis_dt.strftime('%d.%m.%Y')
+                giris_str = giris_dt.strftime('%d.%m.%Y')
+            except:
+                giris_str, cikis_str = selected_date, "Belirtilmedi"
+
+            # Hata veren f-string bloğu burada düzeltildi:
             st.markdown(f"""
             <div class="info-card">
                 <h3 style='margin-top:0;'>👤 Misafir: {r['Ad Soyad']}</h3>
                 <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size:16px;'>
-                    <div>📅
+                    <div>📅 <b>Giriş:</b> {giris_str}</div>
+                    <div>📅 <b>Çıkış:</b> {cikis_str}</div>
+                    <div>🌙 <b>Toplam:</b> {r['Gece']} Gece</div>
+                    <div>📞 <b>Tel:</b> {r['Tel']}</div>
+                    <div>💵 <b>Günlük:</b> {r['Ucret']:,} TL</div>
+                    <div>💰 <b>Toplam:</b> {r['Toplam']:,} TL</div>
+                    <div style='grid-column: span 2; padding:10px; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1; margin-top:10px;'>
+                        💳 <b>Ödeme Durumu:</b> {r['Kapora']}
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
+            wp_msg = urllib.parse.quote(f"Merhaba {r['Ad Soyad']}, Detayvalık Villa rezervasyonunuzu teyit etmek için yazıyorum...")
+            st.markdown(f'<a href="https://wa.me/{str(r["Tel"]).replace(" ","")}?text={wp_msg}" target="_blank" style="background-color: #25D366; color: white; padding: 12px 25px; border-radius: 12px; text-decoration: none; font-weight: 700; display: inline-block; text-align:center; width:100%;">📱 WhatsApp Mesajı Gönder</a>', unsafe_allow_html=True)
+        
+        else:
+            st.subheader(f"📝 {selected_date} İçin Hızlı Kayıt")
+            with st.form("hizli_kayit_v5", clear_on_submit=True):
+                f1, f2, f3 = st.columns(3)
+                f_ad = f1.text_input("Misafir Ad Soyad")
+                f_tel = f2.text_input("Telefon (90...)", value="90")
+                f_tarih = f3.date_input("Giriş Tarihi", value=datetime.strptime(selected_date, "%Y-%m-%d"))
+                
+                f4, f5, f6 = st.columns(3)
+                f_gun = f4.number_input("Gece Sayısı", min_value=1, value=1)
+                f_ucret = f5.number_input("Gecelik Ücret (TL)", min_value=0)
+                f_kapora = f6.selectbox("Ödeme/Kapora Durumu", ["Kapora Bekleniyor", "Kapora Alındı", "Tamamı Ödendi"])
+                
+                toplam_hesap = f_gun * f_ucret
+                st.info(f"💰 **Otomatik Hesaplanan Toplam: {toplam_hesap:,} TL**")
+                
+                if st.form_submit_button("✅ REZERVASYONU KAYDET"):
+                    yeni_liste = []
+                    for i in range(int(f_gun)):
+                        t_str = (f_tarih + timedelta(days=i)).strftime("%Y-%m-%d")
+                        yeni_liste.append({
+                            "Tarih": t_str, "Ad Soyad": f_ad, "Tel": f_tel, 
+                            "Ucret": f_ucret, "Gece": f_gun, "Durum": "Dolu", 
+                            "Toplam": toplam_hesap, "Kapora": f_kapora
+                        })
+                    pd.concat([df, pd.DataFrame(yeni_liste)], ignore_index=True).to_csv(REZ_FILE, index=False, encoding='utf-8-sig')
+                    st.success("Kayıt Başarıyla Eklendi!")
+                    st.rerun()
+
+    # 3. GELİŞMİŞ DASHBOARD (En Altta)
+    st.divider()
+    month_days = calendar.monthrange(2026, ay_idx)[1]
+    month_df = df[pd.to_datetime(df['Tarih'], errors='coerce').dt.month == ay_idx]
+    
+    ciro = month_df.drop_duplicates(["Ad Soyad", "Toplam"])["Toplam"].sum()
+    dolu_gun = month_df['Tarih'].nunique()
+    bos_gun = month_days - dolu_gun
+    occ_rate = (dolu_gun / month_days) * 100
+
+    if occ_rate > 85: tavsiye = "🚀 Harika! Fiyatları %15 artırabilirsin."
+    elif occ_rate > 50: tavsiye = "✅ İyi Gidiyor. Son dakika indirimleri yapabilirsin."
+    elif occ_rate > 0: tavsiye = "📉 Kampanya veya reklam çıkma zamanı."
+    else: tavsiye = "💤 Henüz kayıt yok. İlanları kontrol et!"
