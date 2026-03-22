@@ -247,7 +247,78 @@ with t_rez:
                     save_data(df)
                     st.rerun()
 
-with t_fin: st.write("Finansal veriler aktif.")
+# --- TAB 3: FİNANSAL TABLO (BU BLOĞU DEĞİŞTİR) ---
+with t_fin:
+    st.subheader(f"💰 {sec_ay} Ayı Finansal Durum")
+
+    # 1. GİDER DOSYASI KONTROLÜ
+    GIDER_FILE = "gider.csv"
+    COL_GIDER = ["Tarih", "Kategori", "Aciklama", "Tutar"]
+    if not os.path.exists(GIDER_FILE):
+        pd.DataFrame(columns=COL_GIDER).to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+    
+    # Gider verilerini yükle
+    try:
+        df_gider = pd.read_csv(GIDER_FILE, sep=';', encoding='utf-8-sig')
+    except:
+        df_gider = pd.DataFrame(columns=COL_GIDER)
+
+    # 2. AY BAZLI FİLTRELEME VE HESAPLAMA
+    # Mevcut rezervasyonlardan o ayın gelirini çek
+    m_rez = df[pd.to_datetime(df['Tarih'], errors='coerce').dt.month == ay_idx]
+    # Tekrarlanan toplamları engellemek için misafir bazlı ciro al
+    gelir = m_rez.drop_duplicates(["Ad Soyad", "Toplam"])["Toplam"].sum()
+    
+    # Vergi Hesabı: %10 KDV + %2 Konaklama Vergisi = %12
+    vergi = gelir * 0.12
+    
+    # O aya ait giderleri filtrele
+    df_gider['Tarih_DT'] = pd.to_datetime(df_gider['Tarih'], errors='coerce')
+    m_gider = df_gider[df_gider['Tarih_DT'].dt.month == ay_idx]
+    toplam_gider = m_gider["Tutar"].sum()
+    
+    # NET GELİR HESABI
+    net_gelir = gelir - vergi - toplam_gider
+
+    # 3. GÖRSEL METRİKLER
+    f1, f2, f3 = st.columns(3)
+    f1.metric("Brüt Gelir", f"{gelir:,.0f} TL")
+    f2.metric("Vergi (%12)", f"-{vergi:,.0f} TL", delta_color="inverse")
+    f3.metric("Toplam Gider", f"-{toplam_gider:,.0f} TL", delta_color="inverse")
+    
+    st.markdown(f"""
+        <div style="background:#1e293b; color:white; padding:20px; border-radius:15px; text-align:center; margin-top:10px;">
+            <small>ÖDENECEK VERGİLER DÜŞÜLDÜKTEN SONRA</small>
+            <h2 style="margin:0; color:#10b981;">KALAN NET GELİR: {net_gelir:,.0f} TL</h2>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.divider()
+
+    # 4. GİDER GİRİŞ SİSTEMİ
+    st.subheader("🧾 Gider Ekle")
+    with st.form("yeni_gider_formu", clear_on_submit=True):
+        c1, c2, c3 = st.columns([1, 2, 1])
+        g_tar = c1.date_input("Gider Tarihi")
+        g_ack = c2.text_input("Gider Açıklaması (Örn: Elektrik, Temizlik)")
+        g_tut = c3.number_input("Tutar (TL)", min_value=0)
+        
+        if st.form_submit_button("Gideri Kaydet"):
+            yeni_gider = pd.DataFrame([{
+                "Tarih": g_tar.strftime("%Y-%m-%d"),
+                "Kategori": "Genel",
+                "Aciklama": g_ack,
+                "Tutar": g_tut
+            }])
+            df_save_gider = pd.concat([df_gider.drop(columns=['Tarih_DT'], errors='ignore'), yeni_gider], ignore_index=True)
+            df_save_gider.to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+            st.success("Gider başarıyla işlendi!")
+            st.rerun()
+
+    # 5. O AYIN GİDER LİSTESİ
+    if not m_gider.empty:
+        st.write(f"📂 **{sec_ay} Ayı Gider Detayları**")
+        st.dataframe(m_gider[['Tarih', 'Aciklama', 'Tutar']], use_container_width=True, hide_index=True)
 with t_set:
     if st.button("🔴 SİSTEMİ SIFIRLA"):
         pd.DataFrame(columns=COL_REZ).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
