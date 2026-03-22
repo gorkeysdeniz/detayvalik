@@ -6,50 +6,45 @@ import calendar
 import urllib.parse
 
 # --- 1. AYARLAR ---
-st.set_page_config(page_title="Detayvalık Operasyon v42.6.4", layout="wide", page_icon="🏡")
+st.set_page_config(page_title="Detayvalık Operasyon v42.6.5", layout="wide", page_icon="🏡")
 
-# Modern Tasarım CSS (İskeleti korur, kartları güzelleştirir)
 st.markdown("""
     <style>
     .stApp { background-color: #F8FAFC !important; }
     .main-header { color: #1e293b; font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
     .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
-    .stat-box { 
-        flex: 1; min-width: 150px; background: white; border: 1px solid #E2E8F0; 
-        padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
+    .stat-box { flex: 1; min-width: 150px; background: white; border: 1px solid #E2E8F0; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
     .day-link { display: block; text-decoration: none; padding: 15px 0; border-radius: 8px; font-weight: 700; color: white !important; text-align: center; border-bottom: 3px solid rgba(0,0,0,0.1); }
     .bos { background: #10b981 !important; } .dolu { background: #ef4444 !important; } 
-    .rez-card { background: white; padding: 15px; border-radius: 12px; border-left: 5px solid #ef4444; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. VERİ YÖNETİMİ (Kritik: Veri kaymasını önler) ---
+# --- 2. VERİ YÖNETİMİ ---
 REZ_FILE = "rez.csv"
+GIDER_FILE = "gider.csv"
 COL_REZ = ["Tarih", "Ad Soyad", "Tel", "Ucret", "Gece", "Not", "Durum", "Toplam", "Kapora"]
+COL_GIDER = ["Tarih", "Kategori", "Aciklama", "Tutar"]
 
-def load_data():
-    if not os.path.exists(REZ_FILE): 
-        pd.DataFrame(columns=COL_REZ).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
+def load_data(file, cols):
+    if not os.path.exists(file): 
+        pd.DataFrame(columns=cols).to_csv(file, index=False, sep=';', encoding='utf-8-sig')
     try:
-        # Boş satırları ve None değerleri temizleyerek oku
-        read_df = pd.read_csv(REZ_FILE, sep=';', encoding='utf-8-sig').dropna(subset=["Tarih"])
-        return read_df.reindex(columns=COL_REZ)
+        return pd.read_csv(file, sep=';', encoding='utf-8-sig').reindex(columns=cols, fill_value="")
     except:
-        return pd.DataFrame(columns=COL_REZ)
+        return pd.DataFrame(columns=cols)
 
-def save_data(df_to_save):
-    # Kaydetmeden önce temizlik yapar
-    df_to_save.dropna(subset=["Tarih"]).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
+def save_data(df, file):
+    df.to_csv(file, index=False, sep=';', encoding='utf-8-sig')
 
-df = load_data()
+df = load_data(REZ_FILE, COL_REZ)
+df_gider = load_data(GIDER_FILE, COL_GIDER)
 
 # --- 3. ANA PANEL ---
-st.markdown('<div class="main-header">🏡 Detayvalık Villa Operasyon v42.6.4</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🏡 Detayvalık Villa Operasyon v42.6.5</div>', unsafe_allow_html=True)
 t_cal, t_rez, t_fin, t_set = st.tabs(["📅 Takvim & İşlemler", "📋 Rezervasyon Listesi", "💰 Finansal Tablo", "⚙️ Ayarlar"])
 
-# --- TAB 1: TAKVİM (Dokunulmadı, sadece stabilite eklendi) ---
+# --- TAB 1: TAKVİM (Sabit İskelet) ---
 with t_cal:
     aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
     sec_ay = st.selectbox("Görünüm Ayı", aylar, index=datetime.now().month-1)
@@ -72,7 +67,7 @@ with t_cal:
     if selected_date:
         rez_info = df[df["Tarih"] == selected_date]
         if rez_info.empty:
-            with st.form("yeni_rez"):
+            with st.form("hizli_kayit"):
                 c1, c2, c3 = st.columns(3)
                 f_ad = c1.text_input("Ad Soyad")
                 f_tel = c2.text_input("Tel", value="90")
@@ -87,70 +82,77 @@ with t_cal:
                         t = (f_giris + timedelta(days=i)).strftime("%Y-%m-%d")
                         yeni.append({"Tarih":t, "Ad Soyad":f_ad, "Tel":f_tel, "Ucret":f_ucret, "Gece":f_gece, "Durum":"Dolu", "Toplam":f_gece*f_ucret, "Kapora":f_kap})
                     df = pd.concat([df, pd.DataFrame(yeni)], ignore_index=True)
-                    save_data(df)
-                    st.rerun()
+                    save_data(df, REZ_FILE); st.rerun()
 
-# --- TAB 2: REZERVASYON LİSTESİ (İstediğin Tüm Özellikler Burada) ---
+# --- TAB 2: REZERVASYON LİSTESİ (KİŞİ BAZLI EXCEL) ---
 with t_rez:
-    if df.empty:
-        st.info("Kayıtlı rezervasyon bulunmuyor.")
-    else:
-        # Veriyi Gruplama (Kişi bazlı Giriş-Çıkış)
+    if not df.empty:
         df_group = df.copy()
         df_group['Tarih_DT'] = pd.to_datetime(df_group['Tarih'])
-        
         summary = df_group.groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Kapora", "Ucret"]).agg(
-            Giris=('Tarih_DT', 'min'),
-            Cikis=('Tarih_DT', 'max')
+            Giris=('Tarih_DT', 'min'), Cikis=('Tarih_DT', 'max')
         ).reset_index()
-        summary['Cikis'] = summary['Cikis'] + timedelta(days=1) # Çıkış sabahını göster
+        summary['Cikis'] = summary['Cikis'] + timedelta(days=1)
+        
+        # EXCEL İNDİRME (Kişi Bazlı Özet)
+        st.subheader("📋 Kişi Bazlı Rezervasyon Arşivi")
+        excel_summary = summary.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+        st.download_button("📥 Kişi Bazlı Excel İndir", data=excel_summary, file_name="Detayvalik_Ozet_Liste.csv", mime='text/csv')
+        
+        st.dataframe(summary, use_container_width=True)
+        
+        # Hızlı Silme
+        st.write("---")
+        for i, r in summary.iterrows():
+            if st.button(f"🗑️ Sil: {r['Ad Soyad']} ({r['Giris'].strftime('%d.%m')})", key=f"d_{i}"):
+                df = df[~((df['Ad Soyad'] == r['Ad Soyad']) & (df['Tel'] == r['Tel']))]
+                save_data(df, REZ_FILE); st.rerun()
 
-        # Üst Metrikler (Görsel Kartlar)
-        st.markdown('<div class="stat-container">', unsafe_allow_html=True)
-        m1, m2, m3 = st.columns(3)
-        m1.markdown(f'<div class="stat-box"><small>Toplam Rezervasyon</small><br><b>{len(summary)} Grup</b></div>', unsafe_allow_html=True)
-        m2.markdown(f'<div class="stat-box"><small>Bekleyen Kaporalar</small><br><b>{len(summary[summary["Kapora"]=="Ödenmedi"])} Adet</b></div>', unsafe_allow_html=True)
-        m3.markdown(f'<div class="stat-box"><small>Toplam Gelecek Gelir</small><br><b>{summary["Toplam"].sum():,.0f} TL</b></div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+# --- TAB 3: FİNANSAL TABLO (VERGİ VE GİDER SİSTEMİ) ---
+with t_fin:
+    st.subheader(f"💰 {sec_ay} Finansal Analiz")
+    
+    # Verileri aya göre filtrele
+    m_rez = df[pd.to_datetime(df['Tarih'], errors='coerce').dt.month == ay_idx]
+    m_gider = df_gider[pd.to_datetime(df_gider['Tarih'], errors='coerce').dt.month == ay_idx]
+    
+    # Hesaplamalar
+    gelir = m_rez.drop_duplicates(["Ad Soyad", "Toplam"])["Toplam"].sum()
+    vergi = gelir * 0.12 # %10 KDV + %2 Konaklama/Turizm vergisi (Toplam %12)
+    toplam_gider = m_gider["Tutar"].sum()
+    net_kar = gelir - vergi - toplam_gider
 
-        # Arama Barı
-        search = st.text_input("🔍 Misafir Adı veya Telefon ile Ara", "")
-        if search:
-            summary = summary[summary['Ad Soyad'].str.contains(search, case=False) | summary['Tel'].astype(str).contains(search)]
+    # Görsel Kartlar
+    f1, f2, f3, f4 = st.columns(4)
+    f1.metric("Brüt Gelir", f"{gelir:,.0f} TL")
+    f2.metric("Vergiler (%12)", f"-{vergi:,.0f} TL", delta_color="inverse")
+    f3.metric("Toplam Gider", f"-{toplam_gider:,.0f} TL", delta_color="inverse")
+    f4.subheader(f"✅ Net: {net_kar:,.0f} TL")
 
-        # Rezervasyon Kartları ve Silme
-        for idx, row in summary.iterrows():
-            with st.container():
-                st.markdown(f"""
-                <div class="rez-card">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <b>👤 {row['Ad Soyad']}</b>
-                        <span style="color:#64748b; font-size:12px;">📞 {row['Tel']}</span>
-                    </div>
-                    <div style="font-size:14px; margin-top:5px;">
-                        📅 {row['Giris'].strftime('%d.%m.%Y')} - {row['Cikis'].strftime('%d.%m.%Y')} ({row['Gece']} Gece) <br>
-                        💰 {row['Toplam']:,} TL ({row['Kapora']})
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if st.button(f"🗑️ Rezervasyonu Tamamen Sil", key=f"del_{idx}"):
-                    # O kişiye ait tüm günleri CSV'den temizle
-                    df = df[~((df['Ad Soyad'] == row['Ad Soyad']) & (df['Tel'] == row['Tel']))]
-                    save_data(df)
-                    st.success("Rezervasyon silindi!")
-                    st.rerun()
+    st.divider()
+    
+    # Gider Girme Sistemi
+    st.write("🧾 **Yeni Gider Ekle**")
+    with st.form("gider_form"):
+        g1, g2, g3, g4 = st.columns(4)
+        g_tar = g1.date_input("Gider Tarihi")
+        g_kat = g2.selectbox("Kategori", ["Faturalar", "Temizlik", "Mutfak/Market", "Tamirat", "Pazarlama", "Diğer"])
+        g_ack = g3.text_input("Açıklama")
+        g_tut = g4.number_input("Tutar (TL)", min_value=0)
+        
+        if st.form_submit_button("Gideri Kaydet"):
+            yeni_gider = pd.DataFrame([{"Tarih": g_tar.strftime("%Y-%m-%d"), "Kategori": g_kat, "Aciklama": g_ack, "Tutar": g_tut}])
+            df_gider = pd.concat([df_gider, yeni_gider], ignore_index=True)
+            save_data(df_gider, GIDER_FILE)
+            st.success("Gider eklendi!"); st.rerun()
 
-        st.divider()
-        # Excel İndirme (Hücreli Format)
-        st.subheader("📊 Ham Veri Tablosu")
-        st.dataframe(df, use_container_width=True)
-        excel_data = df.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button("📥 Excel Formatında İndir", data=excel_data, file_name="Detayvalik_Rezervasyonlar.csv", mime='text/csv')
+    if not m_gider.empty:
+        st.write(f"📂 **{sec_ay} Ayı Gider Detayları**")
+        st.table(m_gider)
 
-# --- TAB 3 & 4 (İskelet Korundu) ---
-with t_fin: st.write("Finansal veriler.")
+# --- TAB 4: AYARLAR ---
 with t_set:
-    if st.button("🔴 Verileri Sıfırla"):
-        pd.DataFrame(columns=COL_REZ).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
+    if st.button("🔴 Tüm Verileri Sıfırla"):
+        save_data(pd.DataFrame(columns=COL_REZ), REZ_FILE)
+        save_data(pd.DataFrame(columns=COL_GIDER), GIDER_FILE)
         st.rerun()
