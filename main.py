@@ -163,76 +163,89 @@ with t_cal:
     </div>
     """, unsafe_allow_html=True)
 
-# --- TAB 2: REZERVASYON LİSTESİ (SADECE BU BLOĞU DEĞİŞTİR) ---
+# --- TAB 2: REZERVASYON LİSTESİ (GÜNCEL SÜRÜM) ---
 with t_rez:
     if df.empty:
         st.info("Kayıtlı rezervasyon bulunmuyor.")
     else:
-        # 1. VERİ HAZIRLAMA & GRUPLAMA
+        # 1. VERİ HAZIRLAMA & GRUPLAMA (Kişi Bazlı)
         df_view = df.copy()
         df_view['Tarih_DT'] = pd.to_datetime(df_view['Tarih'], errors='coerce')
         df_view = df_view.dropna(subset=['Tarih_DT'])
         
-        # Kişi bazlı özet tabloyu oluştur (Giriş-Çıkış şeklinde)
         summary = df_view.groupby(["Ad Soyad", "Tel", "Gece", "Toplam", "Kapora", "Ucret"]).agg(
             Giris=('Tarih_DT', 'min'),
             Cikis=('Tarih_DT', 'max')
         ).reset_index()
         
-        # Çıkış sabahını ve tarih formatlarını ayarla
-        summary['Cikis'] = summary['Cikis'] + timedelta(days=1)
-        summary['Giris_Tarihi'] = summary['Giris'].dt.strftime('%d.%m.%Y')
-        summary['Cikis_Tarihi'] = summary['Cikis'].dt.strftime('%d.%m.%Y')
+        summary['Cikis_S'] = summary['Cikis'] + timedelta(days=1)
+        summary['Giris_T'] = summary['Giris'].dt.strftime('%d.%m.%Y')
+        summary['Cikis_T'] = summary['Cikis_S'].dt.strftime('%d.%m.%Y')
 
-        # 2. ÜST METRİKLER (Sade Dashboard)
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Toplam Grup", f"{len(summary)}")
-        m2.metric("Bekleyen Kapora", f"{len(summary[summary['Kapora']=='Ödenmedi'])}")
-        m3.metric("Toplam Ciro", f"{summary['Toplam'].sum():,.0f} TL")
+        # 2. GÖRSEL METRİK KARTLARI (Şık Tasarım)
+        st.markdown('<div class="stat-container">', unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3)
+        c1.markdown(f'<div class="stat-box"><small>Toplam Rez</small><br><b style="font-size:20px;">{len(summary)} Grup</b></div>', unsafe_allow_html=True)
+        c2.markdown(f'<div class="stat-box"><small>Bekleyen Kapora</small><br><b style="color:#ef4444; font-size:20px;">{len(summary[summary["Kapora"]=="Ödenmedi"])} Adet</b></div>', unsafe_allow_html=True)
+        c3.markdown(f'<div class="stat-box"><small>Toplam Ciro</small><br><b style="color:#10b981; font-size:20px;">{summary["Toplam"].sum():,.0f} TL</b></div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # 3. ARAMA VE ÖZEL KART GÖSTERİMİ
+        st.subheader("🔍 Misafir Sorgula")
+        search_term = st.text_input("İsim veya telefon yazın, detaylı kartı görün...", "")
+        
+        if search_term:
+            # Arama sonuçlarını filtrele
+            results = summary[
+                summary['Ad Soyad'].astype(str).str.contains(search_term, case=False, na=False) | 
+                summary['Tel'].astype(str).str.contains(search_term, na=False)
+            ]
+            
+            if not results.empty:
+                for idx, r in results.iterrows():
+                    st.markdown(f"""
+                    <div style="background: white; padding: 20px; border-radius: 15px; border-left: 10px solid #D6BD98; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                        <h3 style="margin:0; color:#1e293b;">👤 {r['Ad Soyad']}</h3>
+                        <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 15px;">
+                            <div><b>📞 Tel:</b> {r['Tel']}</div>
+                            <div><b>🌙 Konaklama:</b> {r['Gece']} Gece</div>
+                            <div><b>📅 Giriş:</b> {r['Giris_T']}</div>
+                            <div><b>📅 Çıkış:</b> {r['Cikis_T']}</div>
+                            <div><b>💵 Gecelik:</b> {r['Ucret']:,} TL</div>
+                            <div><b>💰 Toplam:</b> {r['Toplam']:,} TL</div>
+                            <div style="grid-column: span 2; padding: 10px; background: #f8fafc; border-radius: 8px; text-align: center;">
+                                <b>💳 Ödeme Durumu:</b> <span style="color: {'#ef4444' if r['Kapora']=='Ödenmedi' else '#10b981'}">{r['Kapora']}</span>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.warning("Eşleşen kayıt bulunamadı.")
 
         st.divider()
 
-        # 3. ARAMA MOTORU (Düzeltildi)
-        search = st.text_input("🔍 Misafir Adı veya Telefon ile Ara...", "")
-        
-        # Arama mantığını hem isim hem telefona göre çalıştır
-        if search:
-            # Telefon numarasını ve ismi string'e çevirip öyle aratıyoruz (Hata almamak için)
-            summary = summary[
-                summary['Ad Soyad'].astype(str).str.contains(search, case=False, na=False) | 
-                summary['Tel'].astype(str).str.contains(search, na=False)
-            ]
-
-        # 4. PROFESYONEL TABLO GÖRÜNÜMÜ
-        # Tabloda görünmesini istediğin sütunları seç ve sırala
-        final_table = summary[['Ad Soyad', 'Tel', 'Giris_Tarihi', 'Cikis_Tarihi', 'Gece', 'Ucret', 'Toplam', 'Kapora']].copy()
-        final_table.columns = ['Misafir', 'Telefon', 'Giriş', 'Çıkış', 'Gece', 'Gecelik', 'Toplam', 'Ödeme']
-        
-        # Tabloyu göster
+        # 4. GENEL TABLO (Sadece Liste Olarak)
+        st.subheader("📋 Tüm Kayıtlar (Özet)")
+        final_table = summary[['Ad Soyad', 'Tel', 'Giris_T', 'Cikis_T', 'Gece', 'Toplam', 'Kapora']].copy()
+        final_table.columns = ['Misafir', 'Telefon', 'Giriş', 'Çıkış', 'Gece', 'Toplam', 'Ödeme']
         st.dataframe(final_table, use_container_width=True, hide_index=True)
 
-        # 5. KİŞİ BAZLI EXCEL İNDİRME (Sütunlu Format)
-        csv_data = final_table.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(
-            label="📥 Bu Listeyi Excel (Kişi Bazlı) İndir",
-            data=csv_data,
-            file_name=f"Detayvalik_Ozet_Liste.csv",
-            mime='text/csv',
-        )
-
-        # 6. HIZLI SİLME (Tablo Altında Seçenek)
-        st.divider()
-        st.subheader("🗑️ Kayıt Sil")
-        sil_liste = summary['Ad Soyad'].unique().tolist()
-        secilen_sil = st.selectbox("Silmek istediğiniz misafiri seçin", ["Seçiniz..."] + sil_liste)
+        # 5. İNDİRME & SİLME (İstediğin gibi kaldı)
+        col_down, col_del = st.columns([2, 1])
         
-        if secilen_sil != "Seçiniz...":
-            if st.button(f"❌ {secilen_sil} Kaydını Tamamen Sil"):
-                # Ana veriden o ismi temizle
-                df = df[df['Ad Soyad'] != secilen_sil]
-                save_data(df)
-                st.success(f"{secilen_sil} kaydı silindi. Güncelleniyor...")
-                st.rerun()
+        with col_down:
+            csv_data = final_table.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+            st.download_button("📥 Excel Listesi (Kişi Bazlı)", data=csv_data, file_name="Detayvalik_Rezv.csv", mime='text/csv')
+            
+        with col_del:
+            sil_liste = summary['Ad Soyad'].unique().tolist()
+            secilen_sil = st.selectbox("Kayıt Sil", ["Seçiniz..."] + sil_liste)
+            if secilen_sil != "Seçiniz...":
+                if st.button(f"❌ {secilen_sil} Sil"):
+                    df = df[df['Ad Soyad'] != secilen_sil]
+                    save_data(df)
+                    st.rerun()
 
 with t_fin: st.write("Finansal veriler aktif.")
 with t_set:
