@@ -374,31 +374,7 @@ with t_fin:
     if not m_gider_fin.empty:
         st.write(f"### 📋 {sec_ay} Gider Detayları")
         st.dataframe(m_gider_fin[['Tarih', 'Aciklama', 'Tutar']], use_container_width=True, hide_index=True)
-    # 4. GİDER GİRİŞ FORMU (Duplicate ID Korunmuş)
-    st.subheader("🧾 Gider Ekle")
-    with st.form("finans_gider_formu_v1", clear_on_submit=True):
-        c1, c2, c3 = st.columns([1, 2, 1])
-        g_tarih = c1.date_input("Tarih", key="g_tarih_input")
-        g_aciklama = c2.text_input("Gider Açıklaması (Market, Elektrik vb.)", key="g_desc_input")
-        g_tutar = c3.number_input("Tutar (TL)", min_value=0, key="g_tutar_input")
-        
-        if st.form_submit_button("💰 GİDERİ KAYDET"):
-            yeni_gider_satiri = pd.DataFrame([{
-                "Tarih": g_tarih.strftime("%Y-%m-%d"),
-                "Kategori": "Genel",
-                "Aciklama": g_aciklama,
-                "Tutar": g_tutar
-            }])
-            # Kaydet
-            df_save_g = pd.concat([df_gider_raw.drop(columns=['Tarih_DT'], errors='ignore'), yeni_gider_satiri], ignore_index=True)
-            df_save_g.to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
-            st.success("Gider başarıyla işlendi!")
-            st.rerun()
-
-    # 5. LİSTELEME
-    if not m_gider_fin.empty:
-        st.write("### Gider Detayları")
-        st.dataframe(m_gider_fin[['Tarih', 'Aciklama', 'Tutar']], use_container_width=True, hide_index=True)
+    
 # --- TAB 4: AYARLAR (GÜNCELLENMİŞ & GÜVENLİ) ---
 with t_set:
     st.subheader("📂 Dosya & Yedekleme Yönetimi")
