@@ -7,52 +7,53 @@ import urllib.parse
 
 st.markdown("""
     <style>
-        /* --- 1. AYDINLIK MOD AYARLARI (Otomatik Algılar) --- */
-        @media (prefers-color-scheme: light) {
-            .stApp { background-color: #FFFFFF !important; }
-            /* Yazıları net siyah/lacivert yap */
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
-            p, label, span, h1, h2, h3 { 
-                color: #1e293b !important; 
-                -webkit-text-fill-color: #1e293b !important;
-            }
-            /* Kartların arka planını çok hafif gri yap ki beyaz zemin üzerinde seçilsin */
-            div[data-testid="stMetric"], .stat-box { 
-                background-color: #F8FAFC !important; 
-                border: 1px solid #E2E8F0 !important; 
-            }
+        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA (SOFT TONLARLA) */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            background-color: #FDFCF9 !important; /* Krem Beyaz Arka Plan */
         }
 
-        /* --- 2. KARANLIK MOD AYARLARI (Otomatik Algılar) --- */
-        @media (prefers-color-scheme: dark) {
-            .stApp { background-color: #0E1117 !important; }
-            /* Yazıları bembeyaz yap */
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
-            p, label, span, h1, h2, h3 { 
-                color: #FFFFFF !important; 
-                -webkit-text-fill-color: #FFFFFF !important;
-            }
-            /* Kartları koyu gri yap */
-            div[data-testid="stMetric"], .stat-box { 
-                background-color: #1A1C24 !important; 
-                border: 1px solid #33363F !important; 
-            }
+        /* 2. TÜM YAZILARI VE METRİKLERİ SİMSİYAH YAP */
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
+        [data-testid="stMarkdownContainer"] p, label, span, h1, h2, h3, small {
+            color: #1A1A1B !important; /* Koyu Antrasit Yazı */
+            opacity: 1 !important;
+            -webkit-text-fill-color: #1A1A1B !important;
         }
 
-        /* --- 3. ORTAK VE SABİT TASARIM (Renklerden Bağımsız) --- */
-        .stButton button {
-            background-color: #8FD9C8 !important;
-            color: #1e293b !important; /* Buton yazısı her zaman okunsun */
+        /* 3. BUTONLARI HEDEFLE VE YAZISINI BEYAZ YAP */
+        .stButton button, div.stButton > button {
+            background-color: #8FD9C8 !important; /* Soft Mint Arka Plan */
+            color: #FFFFFF !important;           /* YAZI BEMBEYAZ */
+            border: 2px solid #5FB39F !important; /* Belirgin pastel çerçeve */
             border-radius: 12px !important;
-            font-weight: 700 !important;
+            font-weight: 800 !important;         /* KALIN YAZI */
+            font-size: 18px !important;          /* Yazı boyutunu büyüt */
             height: 3.5em !important;
+            display: block !important;
             width: 100% !important;
+            -webkit-text-fill-color: #FFFFFF !important; /* iPhone zorlaması */
         }
-        
-        .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; }
-        .day-link { display: block; text-decoration: none; padding: 15px 0; border-radius: 8px; font-weight: 700; color: white !important; text-align: center; }
-        .bos { background: #10b981 !important; } 
-        .dolu { background: #ef4444 !important; }
+
+        /* 4. TAKVİM ÇİZGİLERİNİ VE GİRİŞ KUTULARINI BELİRGİNLEŞTİR */
+        input, div[data-baseweb="input"], div[data-baseweb="select"] {
+            background-color: #FFFFFF !important;
+            color: #1A1A1B !important;
+            border: 2px solid #E0DDD7 !important; /* Takvim çizgileri gibi duran belirgin çerçeve */
+        }
+
+        /* 5. METRİK KARTLARINI BELİRGİNLEŞTİR */
+        div[data-testid="stMetric"] {
+            background-color: #FFFFFF !important;
+            border: 1px solid #E0DDD7 !important;
+            border-radius: 12px !important;
+            padding: 15px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+        }
+
+        /* 6. GİDER EKLEME ALANINDAKİ KOYU BANNER'I SİL */
+        div[data-testid="stVerticalBlock"] > div:has(h1, h2, h3) {
+            background-color: transparent !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
