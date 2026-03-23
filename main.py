@@ -90,14 +90,14 @@ def load_data():
         return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
     try:
         # Dosyayı oku
-        return pd.read_csv(REZ_FILE, sep=';', encoding='utf-8-sig')
+        return pd.read_csv(REZ_FILE, sep=',', encoding='utf-8-sig')
     except:
         # Hata varsa boş dön
         return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
         
 def save_data(df_to_save):
     # 1. Önce her zamanki gibi yerel bilgisayara/buluta kaydet
-    df_to_save.to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
+    df_to_save.to_csv(REZ_FILE, index=False, sep=',', encoding='utf-8-sig')
     
     # 2. GitHub'a otomatik yedekle
     try:
@@ -109,7 +109,7 @@ def save_data(df_to_save):
         repo = g.get_user().get_repo(repo_name)
         
         # Dosyanın içeriğini hazırla
-        content = df_to_save.to_csv(index=False, sep=';', encoding='utf-8-sig')
+        content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
         
         # GitHub'daki mevcut dosyayı bul ve güncelle
         contents = repo.get_contents("rez.csv")
