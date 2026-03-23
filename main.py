@@ -5,21 +5,63 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 
+# --- 1. SAYFA AYARLARI ---
+st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
 
+# --- 2. GENEL GÖRSEL SIFIRLAMA (AYDINLIK/KARANLIK ÇAKIŞMASI İÇİN) ---
+st.markdown("""
+    <style>
+        /* Aydınlık Mod: Bembeyaz Arka Plan */
+        @media (prefers-color-scheme: light) {
+            .stApp, [data-testid="stAppViewContainer"] { background-color: #FFFFFF !important; }
+            h1, h2, h3, p, label, span { color: #1e293b !important; }
+            .stButton button { color: #000000 !important; font-weight: 700 !important; }
+        }
+        /* Karanlık Mod: Net Siyah Arka Plan */
+        @media (prefers-color-scheme: dark) {
+            .stApp, [data-testid="stAppViewContainer"] { background-color: #0E1117 !important; }
+            h1, h2, h3, p, label, span { color: #FFFFFF !important; }
+            .stButton button { color: #FFFFFF !important; font-weight: 700 !important; }
+        }
+        /* Ortak Buton Tasarımı */
+        .stButton button { 
+            background-color: #8FD9C8 !important; 
+            border-radius: 12px !important; 
+            height: 3.5em !important; 
+            width: 100% !important; 
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-# ---  (Fonksiyon Tanımı) ---
-def finans_kart_olustur(baslik, deger, renk="#1e293b"):
+# --- 3. YAZI TİPİ KESKİN FİNANS KART FONKSİYONU ---
+def finans_kart_olustur(baslik, deger, renk="#1E293B"):
     st.markdown(f"""
         <div style="
             background-color: {renk}; 
-            padding: 20px; 
-            border-radius: 15px; 
+            padding: 22px; 
+            border-radius: 18px; 
             text-align: center; 
             margin-bottom: 15px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-            <p style="margin: 0; font-size: 14px; color: #cbd5e1 !important; font-weight: 600; text-transform: uppercase;">{baslik}</p>
-            <h2 style="margin: 5px 0 0 0; font-size: 28px; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 800;">{deger}</h2>
+        ">
+            <p style="
+                margin: 0; 
+                font-size: 13px; 
+                color: #FFFFFF !important; 
+                text-transform: uppercase; 
+                letter-spacing: 1.5px; 
+                font-weight: 700;
+                -webkit-text-fill-color: #FFFFFF !important;
+            ">{baslik}</p>
+            <h2 style="
+                margin: 5px 0 0 0; 
+                font-size: 32px; 
+                color: #FFFFFF !important; 
+                font-weight: 900;
+                letter-spacing: -1px;
+                -webkit-text-fill-color: #FFFFFF !important;
+            ">{deger}</h2>
         </div>
     """, unsafe_allow_html=True)
 
@@ -330,17 +372,26 @@ with t_fin:
     
     net_kar_tl = brut_gelir - vergi_yukü - toplam_gider_tl
 
-    # 3. GÖRSEL PANEL (YENİLENMİŞ - HER MODDA OKUNUR)
-    col1, col2 = st.columns(2)
+    # --- 3. FİNANSAL ANALİZ EKRANI ---
+st.header("💰 Mart Finansal Analizi")
 
-    with col1:
-        finans_kart_olustur("Brüt Ciro", f"{brut_gelir:,.0f} TL", "#1e293b")
-        finans_kart_olustur("Gider Toplamı", f"-{toplam_gider_tl:,.0f} TL", "#ef4444")
+# Değişkenlerini buraya bağla (Örn: toplam_gelir, toplam_gider vb.)
+# Şimdilik örnek rakamlar bırakıyorum:
+gelir_ornek = 50000 
+gider_ornek = 5000
+vergi_ornek = gelir_ornek * 0.12
+net_kar_ornek = gelir_ornek - gider_ornek - vergi_ornek
 
-    with col2:
-        finans_kart_olustur("Vergi Tahmini", f"-{vergi_yukü:,.0f} TL", "#334155")
-        finans_kart_olustur("BU AYIN NET KARI", f"{net_kar_tl:,.0f} TL", "#10b981")
-    st.divider()
+# Kartları alt alta veya yan yana dizebilirsin. Yan yana için col1, col2 kullanabiliriz:
+col1, col2 = st.columns(2)
+
+with col1:
+    finans_kart_olustur("BRÜT GELİR", f"{gelir_ornek:,.0f} TL", "#1E293B")
+    finans_kart_olustur("GİDER TOPLAMI", f"-{gider_ornek:,.0f} TL", "#EF4444")
+
+with col2:
+    finans_kart_olustur("VERGİ TAHMİNİ (%12)", f"-{vergi_ornek:,.0f} TL", "#334155")
+    finans_kart_olustur("BU AYIN NET KARI", f"{net_kar_ornek:,.0f} TL", "#10B981")
 
     # 4. GİDER GİRİŞ FORMU (Duplicate ID Korunmuş)
     st.subheader("🧾 Gider Ekle")
