@@ -239,7 +239,7 @@ with t_rez:
         # 2. GÖRSEL METRİK KARTLARI (Şık Tasarım)
         st.markdown('<div class="stat-container">', unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3)
-        c1.markdown(f'<div class="stat-box"><small>Toplam Rez</small><br><b style="font-size:20px;">{len(summary)} Grup</b></div>', unsafe_allow_html=True)
+        c1.markdown(f'<div class="stat-box"><small>Toplam Rez</small><br><b style="font-size:20px;">{len(summary)} </b></div>', unsafe_allow_html=True)
         c2.markdown(f'<div class="stat-box"><small>Bekleyen Kapora</small><br><b style="color:#ef4444; font-size:20px;">{len(summary[summary["Kapora"]=="Ödenmedi"])} Adet</b></div>', unsafe_allow_html=True)
         c3.markdown(f'<div class="stat-box"><small>Toplam Ciro</small><br><b style="color:#10b981; font-size:20px;">{summary["Toplam"].sum():,.0f} TL</b></div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
