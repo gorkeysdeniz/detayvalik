@@ -7,50 +7,43 @@ import urllib.parse
 # --- AYDINLIK MOD & SOFT TASARIM ---
 st.markdown("""
     <style>
-        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        /* 1. TARAYICIYA KARANLIK MODU YOK SAYMASINI SÖYLE */
+        :root {
+            color-scheme: light !important;
+        }
+
+        /* 2. TÜM SAYFAYI AYDINLIĞA ÇİVİLE */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
             background-color: #FDFCF9 !important;
-        }
-
-        /* 2. TÜM METİNLERİ SİMSİYAH YAP (ÖZELLİKLE CİRO VE BUTON İÇLERİ) */
-        /* Bu satır Metric Label, Value ve Buton yazılarını kapsar */
-        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
-        [data-testid="stMarkdownContainer"] p, label, span, .stButton button {
             color: #000000 !important;
-            opacity: 1 !important;
-            -webkit-text-fill-color: #000000 !important;
         }
 
-        /* 3. BUTONLARI BELİRGİNLEŞTİR VE YAZISINI SİYAH YAP */
-        div.stButton > button {
-            background-color: #8FD9C8 !important; /* Soft Mint */
-            color: #000000 !important;           /* YAZI SİYAH */
-            font-weight: 800 !important;         /* KALIN YAZI */
-            border: 2px solid #5FB39F !important;
-            border-radius: 12px !important;
-            height: 3.5em !important;
+        /* 3. HAYALET YAZILARI (CİRO, DOLULUK VB.) SİMSİYAH YAP */
+        * {
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important; /* iPhone zorlaması için */
         }
 
-        /* 4. FINANSAL TABLO VE KARTLARI BELİRGİNLEŞTİR */
+        /* 4. METRİK KUTULARINI BELİRGİNLEŞTİR */
         div[data-testid="stMetric"] {
             background-color: #FFFFFF !important;
-            border: 1px solid #E0DDD7 !important;
+            border: 2px solid #E0DDD7 !important;
             border-radius: 12px !important;
-            padding: 15px !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+            padding: 10px !important;
         }
 
-        /* 5. GİDER EKLEME ALANINDAKİ SİYAH BANNER'I DÜZELT */
-        /* Görüntüdeki o koyu lacivert alanı ferahlatır */
-        div[data-testid="stVerticalBlock"] > div:has(h1, h2, h3) {
-            background-color: transparent !important;
+        /* 5. BUTONLARIN İÇİNDEKİ YAZIYI OKUNUR YAP */
+        .stButton button {
+            background-color: #8FD9C8 !important;
+            color: #000000 !important;
+            font-weight: 800 !important;
+            border: none !important;
         }
-        
-        /* 6. INPUT (GİRİŞ) KUTULARINI OKUNUR YAP */
-        input, div[data-baseweb="input"], div[data-baseweb="select"] {
+
+        /* 6. INPUT (GİRİŞ) KUTULARI */
+        input, select, textarea {
             background-color: #FFFFFF !important;
             color: #000000 !important;
-            border: 1px solid #DCD9D2 !important;
         }
     </style>
 """, unsafe_allow_html=True)
