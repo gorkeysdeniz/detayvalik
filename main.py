@@ -98,8 +98,39 @@ def load_data():
         return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
         
 def save_data(df_to_save):
-    # 1. Önce her zamanki gibi yerel bilgisayara/buluta kaydet
-    df_to_save.to_csv(REZ_FILE, index=False, sep=',', encoding='utf-8-sig')
+    # 1. ADIM: Yerel Dosyaya Yazmayı Dene
+    try:
+        df_to_save.to_csv(REZ_FILE, index=False, sep=',', encoding='utf-8-sig')
+        st.sidebar.success("✅ Yerel dosya güncellendi.")
+    except Exception as e:
+        st.sidebar.error(f"❌ Yerel yazma hatası: {e}")
+
+    # 2. ADIM: GitHub'a Göndermeyi Dene
+    try:
+        token = st.secrets["GITHUB_TOKEN"]
+        repo_name = st.secrets["GITHUB_REPO"]
+        
+        g = Github(token)
+        repo = g.get_user().get_repo(repo_name)
+        
+        content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
+        
+        # Dosyayı bul
+        contents = repo.get_contents("rez.csv")
+        
+        # GÜNCELLEME İŞLEMİ
+        repo.update_file(
+            contents.path, 
+            "🔄 Rezervasyon Güncellendi", 
+            content, 
+            contents.sha
+        )
+        st.toast("☁️ GitHub yedeği başarılı!", icon="✅")
+        
+    except Exception as e:
+        # Burası çok önemli, hatayı bize söyleyecek:
+        st.error(f"⚠️ GitHub Yedekleme Hatası: {e}")
+        st.info("İpucu: Token yetkilerini (repo) ve Secrets ayarlarını kontrol et.")
     
     # 2. GitHub'a otomatik yedekle
     try:
