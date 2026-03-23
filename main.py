@@ -4,6 +4,39 @@ import os
 from datetime import datetime, timedelta
 import calendar
 import urllib.parse
+# --- AYDINLIK MOD & SOFT TASARIM ---
+st.set_page_config(page_title="Villa Yönetim", layout="wide")
+
+st.markdown("""
+    <style>
+        /* 1. Arka planı ve metinleri her koşulda "Gündüz Modu"na zorla */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
+            background-color: #FDFCF9 !important;
+            color: #1A1A1B !important;
+        }
+
+        /* 2. Yazıların karanlıkta kalmasını engelle (Okunabilirlik) */
+        h1, h2, h3, p, span, label, .stMarkdown {
+            color: #1A1A1B !important;
+        }
+
+        /* 3. Input kutularını (takvim, yazı alanı) belirginleştir */
+        input, div[data-baseweb="select"] {
+            background-color: #FFFFFF !important;
+            color: #1A1A1B !important;
+            border: 1px solid #DCD9D2 !important;
+        }
+
+        /* 4. Butonları "Soft Mint" yap */
+        .stButton>button {
+            background-color: #8FD9C8 !important;
+            color: #1A1A1B !important;
+            border-radius: 8px !important;
+            border: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 
 # --- 1. AYARLAR & SABİT TASARIM ---
 st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
