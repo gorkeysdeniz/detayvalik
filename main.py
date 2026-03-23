@@ -111,7 +111,7 @@ def save_data(df_to_save):
         repo_name = st.secrets["GITHUB_REPO"]
         
         g = Github(token)
-        repo = g.get_user().get_repo(repo_name)
+        g.get_repo(repo_name)
         
         # CSV içeriğini hazırla
         content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
