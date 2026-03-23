@@ -5,34 +5,43 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 # --- AYDINLIK MOD & SOFT TASARIM ---
-st.set_page_config(page_title="Villa Yönetim", layout="wide")
-
 st.markdown("""
     <style>
-        /* 1. Arka planı ve metinleri her koşulda "Gündüz Modu"na zorla */
+        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
             background-color: #FDFCF9 !important;
             color: #1A1A1B !important;
         }
 
-        /* 2. Yazıların karanlıkta kalmasını engelle (Okunabilirlik) */
-        h1, h2, h3, p, span, label, .stMarkdown {
+        /* 2. TÜM METİN TÜRLERİNİ SİYAHA YAKIN YAP (HİÇBİRİ KAÇAMAZ) */
+        * {
             color: #1A1A1B !important;
         }
 
-        /* 3. Input kutularını (takvim, yazı alanı) belirginleştir */
-        input, div[data-baseweb="select"] {
+        /* 3. INPUT VE TABLO İÇİNDEKİ YAZILARI NETLEŞTİR */
+        input, select, textarea, div[role="listbox"], div[data-baseweb="select"] {
             background-color: #FFFFFF !important;
             color: #1A1A1B !important;
-            border: 1px solid #DCD9D2 !important;
+            -webkit-text-fill-color: #1A1A1B !important; /* Bazı tarayıcılar için zorlama */
         }
 
-        /* 4. Butonları "Soft Mint" yap */
+        /* 4. DATA FRAME (TABLO) İÇERİĞİNİ OKUNUR YAP */
+        .stDataFrame div, .stDataFrame span, .stDataFrame table {
+            color: #1A1A1B !important;
+        }
+
+        /* 5. BUTONLARIN İÇİNDEKİ YAZILAR (MİNT ÜZERİNE KOYU) */
         .stButton>button {
             background-color: #8FD9C8 !important;
             color: #1A1A1B !important;
-            border-radius: 8px !important;
-            border: none !important;
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            border: 1px solid #7EC8B7 !important;
+        }
+        
+        /* 6. FORM ETİKETLERİ VE YARDIMCI METİNLER */
+        label, .stMarkdown, p, span {
+            font-weight: 500 !important;
         }
     </style>
 """, unsafe_allow_html=True)
