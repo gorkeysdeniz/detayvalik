@@ -10,41 +10,45 @@ st.markdown("""
         /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
             background-color: #FDFCF9 !important;
-            color: #1A1A1B !important;
         }
 
-        /* 2. TÜM METİN TÜRLERİNİ SİYAHA YAKIN YAP (HİÇBİRİ KAÇAMAZ) */
+        /* 2. HER ŞEYİN RENGİNİ SİYAH YAP (ZORUNLU) */
+        /* Bu komut hayalet yazıları (Ciro, Doluluk vb.) direkt simsiyah yapar */
         * {
             color: #1A1A1B !important;
         }
 
-        /* 3. INPUT VE TABLO İÇİNDEKİ YAZILARI NETLEŞTİR */
-        input, select, textarea, div[role="listbox"], div[data-baseweb="select"] {
+        /* 3. METRİK KARTLARI (ÖZELLİKLE SENİN GÖRÜNTÜDEKİLER) */
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"] {
+            color: #1A1A1B !important;
+        }
+
+        /* 4. TABLO VE VERİ GİRİŞ ALANLARI */
+        input, select, textarea, div[data-baseweb="select"] {
             background-color: #FFFFFF !important;
             color: #1A1A1B !important;
-            -webkit-text-fill-color: #1A1A1B !important; /* Bazı tarayıcılar için zorlama */
+            border: 1px solid #DCD9D2 !important;
         }
 
-        /* 4. DATA FRAME (TABLO) İÇERİĞİNİ OKUNUR YAP */
-        .stDataFrame div, .stDataFrame span, .stDataFrame table {
-            color: #1A1A1B !important;
+        /* 5. ALTTAKİ KARTLARIN ARKA PLANINI HAFİF BELİRGİN YAP */
+        div[data-testid="stMetric"] {
+            background-color: #FFFFFF;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #F0EEE9;
         }
 
-        /* 5. BUTONLARIN İÇİNDEKİ YAZILAR (MİNT ÜZERİNE KOYU) */
+        /* 6. BUTONLAR - SOFT MİNT */
         .stButton>button {
             background-color: #8FD9C8 !important;
             color: #1A1A1B !important;
             border-radius: 10px !important;
-            font-weight: 600 !important;
-            border: 1px solid #7EC8B7 !important;
-        }
-        
-        /* 6. FORM ETİKETLERİ VE YARDIMCI METİNLER */
-        label, .stMarkdown, p, span {
-            font-weight: 500 !important;
+            font-weight: bold !important;
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 # --- 1. AYARLAR & SABİT TASARIM ---
