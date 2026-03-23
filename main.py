@@ -7,47 +7,45 @@ import urllib.parse
 # --- AYDINLIK MOD & SOFT TASARIM ---
 st.markdown("""
     <style>
-        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA */
+        /* 1. TARAYICIYA AYDINLIK MODU DAYAT */
+        :root {
+            color-scheme: light !important;
+        }
+
+        /* 2. TÜM SAYFAYI AYDINLIĞA ÇİVİLE */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
             background-color: #FDFCF9 !important;
         }
 
-        /* 2. TÜM METİNLERİ SİMSİYAH YAP (ZORUNLU) */
+        /* 3. HAYALET YAZILARI (CİRO, DOLULUK VB.) SİMSİYAH YAP */
+        /* opacity: 1 ve -webkit zorlaması iPhone için kritiktir */
         [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
-        [data-testid="stMarkdownContainer"] p, label, span {
+        [data-testid="stMarkdownContainer"] p, label, span, h1, h2, h3 {
             color: #000000 !important;
             opacity: 1 !important;
-            -webkit-text-fill-color: #000000 !important; /* iPhone zorlaması */
+            -webkit-text-fill-color: #000000 !important;
         }
 
-        /* 3. İSTİSNASIZ TÜM BUTONLARI HEDEFLE (NOKTA ATIŞI) */
-        /* Bu komut hayalet butonları (Gider Kaydet vb.) Mint Yeşili yapar */
-        .stButton button, div.stButton > button, [data-testid="stForm"] button {
-            background-color: #8FD9C8 !important; /* Soft Mint */
-            color: #000000 !important;           /* YAZI SİYAH */
-            font-weight: 800 !important;         /* KALIN YAZI */
-            border: 2px solid #5FB39F !important; /* Belirgin çerçeve */
+        /* 4. TÜM BUTONLARI OKUNUR YAP (MİNT + SİYAH YAZI) */
+        .stButton button, div.stButton > button {
+            background-color: #8FD9C8 !important;
+            color: #000000 !important;
+            font-weight: 800 !important;
+            border: 2px solid #5FB39F !important;
             border-radius: 12px !important;
             height: 3.5em !important;
-            display: block !important;
             width: 100% !important;
         }
 
-        /* 4. METRİK KARTLARINI BELİRGİNLEŞTİR */
+        /* 5. METRİK KARTLARINI BELİRGİNLEŞTİR */
         div[data-testid="stMetric"] {
             background-color: #FFFFFF !important;
             border: 1px solid #E0DDD7 !important;
             border-radius: 12px !important;
             padding: 15px !important;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
         }
 
-        /* 5. GİDER EKLEME ALANINDAKİ KOYU BANNER'I SİL */
-        div[data-testid="stVerticalBlock"] > div:has(h1, h2, h3) {
-            background-color: transparent !important;
-        }
-        
-        /* 6. GİRİŞ KUTULARINI OKUNUR YAP */
+        /* 6. GİRİŞ KUTULARI */
         input, div[data-baseweb="input"], div[data-baseweb="select"] {
             background-color: #FFFFFF !important;
             color: #000000 !important;
@@ -55,6 +53,7 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
