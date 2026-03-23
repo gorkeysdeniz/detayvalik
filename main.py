@@ -116,6 +116,45 @@ with t_cal:
     aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]
     sec_ay = st.selectbox("Görünüm Ayı", aylar, index=datetime.now().month-1)
     ay_idx = aylar.index(sec_ay) + 1
+
+    # --- EN YAKIN TEMİZLİK GÜNÜ HATIRLATICI ---
+    bugun = datetime.now()
+    
+    # Tüm rezervasyonların çıkış tarihlerini hesapla
+    if not df.empty:
+        df_clean = df.copy()
+        df_clean['Cikis_DT'] = pd.to_datetime(df_clean['Tarih']) + pd.to_timedelta(df_clean['Gece'], unit='d')
+        
+        # Gelecekteki (bugünden sonraki) en yakın çıkışı bul
+        gelecek_cikislar = df_clean[df_clean['Cikis_DT'] >= bugun]
+        
+        if not gelecek_cikislar.empty:
+            en_yakin_cikis = gelecek_cikislar['Cikis_DT'].min()
+            gun_farki = (en_yakin_cikis - bugun).days + 1
+            
+            # Kartın rengini aciliyet durumuna göre belirleyelim
+            if gun_farki == 0:
+                kart_renk = "#ef4444" # Kırmızı (Bugün!)
+                mesaj = "BUGÜN TEMİZLİK VAR!"
+            elif gun_farki == 1:
+                kart_renk = "#f59e0b" # Turuncu (Yarın)
+                mesaj = "YARIN TEMİZLİK VAR"
+            else:
+                kart_renk = "#10b981" # Yeşil (Vakit var)
+                mesaj = "Sıradaki Temizlik"
+
+            # Görsel Kart Tasarımı
+            st.markdown(f"""
+                <div style="background-color: {kart_renk}; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; color: white;">
+                    <p style="margin: 0; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">{mesaj}</p>
+                    <h2 style="margin: 5px 0; font-size: 32px; color: white !important;">{en_yakin_cikis.strftime('%d %B %Y')}</h2>
+                    <p style="margin: 0; opacity: 0.9;">📅 {gun_farki} gün kaldı</p>
+                </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("Yakın zamanda planlı bir çıkış/temizlik bulunmuyor.")
+    else:
+        st.info("Henüz rezervasyon kaydı yok.")
     
     # TAKVİM GÖRÜNÜMÜ
     cal_html = '<table class="modern-table"><tr><th>Pt</th><th>Sa</th><th>Ça</th><th>Pe</th><th>Cu</th><th>Ct</th><th>Pz</th></tr>'
