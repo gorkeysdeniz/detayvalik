@@ -7,34 +7,55 @@ import urllib.parse
 # --- AYDINLIK MOD & SOFT TASARIM ---
 st.markdown("""
     <style>
-        /* 1. BUTONLARI HEDEFLE (REZERVASYON EKLE, GİDER KAYDET VB.) */
-        .stButton button {
-            background-color: #8FD9C8 !important; /* Soft Mint Arka Plan */
-            color: #FFFFFF !important;          /* İÇİNDEKİ YAZI BEMBEYAZ */
+        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            background-color: #FDFCF9 !important;
+        }
+
+        /* 2. TÜM METİNLERİ SİMSİYAH YAP (ZORUNLU) */
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
+        [data-testid="stMarkdownContainer"] p, label, span {
+            color: #000000 !important;
+            opacity: 1 !important;
+            -webkit-text-fill-color: #000000 !important; /* iPhone zorlaması */
+        }
+
+        /* 3. İSTİSNASIZ TÜM BUTONLARI HEDEFLE (NOKTA ATIŞI) */
+        /* Bu komut hayalet butonları (Gider Kaydet vb.) Mint Yeşili yapar */
+        .stButton button, div.stButton > button, [data-testid="stForm"] button {
+            background-color: #8FD9C8 !important; /* Soft Mint */
+            color: #000000 !important;           /* YAZI SİYAH */
+            font-weight: 800 !important;         /* KALIN YAZI */
+            border: 2px solid #5FB39F !important; /* Belirgin çerçeve */
             border-radius: 12px !important;
-            border: 2px solid #5FB39F !important; /* Kenarlık biraz daha koyu olsun */
-            font-weight: bold !important;        /* Yazıyı kalınlaştır */
-            font-size: 18px !important;          /* Yazı boyutunu büyüt */
-            width: 100% !important;
             height: 3.5em !important;
             display: block !important;
-            -webkit-text-fill-color: #FFFFFF !important; /* iPhone zorlaması için */
+            width: 100% !important;
         }
 
-        /* 2. BUTONA BASILDIĞINDA VEYA ÜZERİNE GELİNDİĞİNDE */
-        .stButton button:hover, .stButton button:active, .stButton button:focus {
-            background-color: #5FB39F !important; /* Hafif koyu yeşil */
-            color: #FFFFFF !important;            /* Yazı hala beyaz kalsın */
-            border: 2px solid #FFFFFF !important;
+        /* 4. METRİK KARTLARINI BELİRGİNLEŞTİR */
+        div[data-testid="stMetric"] {
+            background-color: #FFFFFF !important;
+            border: 1px solid #E0DDD7 !important;
+            border-radius: 12px !important;
+            padding: 15px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
         }
 
-        /* 3. DİĞER METİNLERİN RENGİNİ KARANLIK MODDA BEYAZ YAP (OPSİYONEL) */
-        /* Eğer Ciro, Doluluk gibi yazılar da koyu kalırsa, burayı açabilirsin */
-        /* [data-testid="stMetricValue"], [data-testid="stMetricLabel"], label, p {
-            color: #FFFFFF !important;
-        } */
+        /* 5. GİDER EKLEME ALANINDAKİ KOYU BANNER'I SİL */
+        div[data-testid="stVerticalBlock"] > div:has(h1, h2, h3) {
+            background-color: transparent !important;
+        }
+        
+        /* 6. GİRİŞ KUTULARINI OKUNUR YAP */
+        input, div[data-baseweb="input"], div[data-baseweb="select"] {
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+            border: 1px solid #DCD9D2 !important;
+        }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
