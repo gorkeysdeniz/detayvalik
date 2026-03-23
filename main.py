@@ -135,8 +135,6 @@ def save_data(df_to_save):
 # DİKKAT: Bu satır fonksiyonun DIŞINDA olmalı (en solda)
 df = load_data()
 
-# Bu satır save_data fonksiyonunun dışında, en altta kalmalı
-df = load_data()
 
 # --- 3. ANA PANEL ---
 st.markdown('<div class="main-header">🏡 Villa Yönetim Paneli (Beta 1.0)</div>', unsafe_allow_html=True)
