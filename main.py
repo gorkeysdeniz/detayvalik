@@ -292,7 +292,7 @@ with t_rez:
             csv_data = final_table.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
             st.download_button("📥 Excel Listesi (Kişi Bazlı)", data=csv_data, file_name="Detayvalik_Rezv.csv", mime='text/csv')
             
-        wwith col_del:
+        with col_del:
             # Silme listesi için "İsim - Telefon" kombinasyonu oluşturuyoruz (Daha güvenli)
             sil_opsiyonlari = summary.apply(lambda x: f"{x['Ad Soyad']} ({x['Tel']})", axis=1).tolist()
             secilen_sil_metin = st.selectbox("Silinecek Rezervasyon", ["Seçiniz..."] + sil_opsiyonlari)
