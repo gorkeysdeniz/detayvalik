@@ -313,17 +313,32 @@ with t_fin:
     net_kar_tl = brut_gelir - vergi_yukü - toplam_gider_tl
 
     # 3. GÖRSEL PANEL (İskelet Tasarımıyla Aynı)
-    st.markdown('<div class="stat-container">', unsafe_allow_html=True)
-    f1, f2, f3 = st.columns(3)
-    f1.markdown(f'<div class="stat-box"><small>Brüt Gelir</small><br><b style="font-size:18px;">{brut_gelir:,.0f} TL</b></div>', unsafe_allow_html=True)
-    f2.markdown(f'<div class="stat-box"><small>Vergi (%12)</small><br><b style="color:#ef4444; font-size:18px;">-{vergi_yukü:,.0f} TL</b></div>', unsafe_allow_html=True)
-    f3.markdown(f'<div class="stat-box"><small>Gider Toplamı</small><br><b style="color:#ef4444; font-size:18px;">-{toplam_gider_tl:,.0f} TL</b></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
+    # HER İKİ MODDA DA (AYDINLIK/KARANLIK) CAM GİBİ OKUNAN KUTU
     st.markdown(f"""
-        <div style="background:#FFFFFF; color:#1e293b; padding:20px; border-radius:15px; text-align:center; margin-top:15px; border: 2px solid #10b981; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-            <small style="color: #64748b; font-weight:bold; letter-spacing:1px;">BU AYIN NET KARI</small>
-            <h2 style="margin:0; color:#10b981; font-size:32px; -webkit-text-fill-color: #10b981;">{net_kar_tl:,.0f} TL</h2>
+        <div style="
+            background-color: #262730; 
+            padding: 25px; 
+            border-radius: 15px; 
+            text-align: center; 
+            margin-top: 20px; 
+            border: 1px solid #464855;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        ">
+            <small style="
+                color: #A1A1AA; 
+                font-weight: 800; 
+                letter-spacing: 1.5px; 
+                text-transform: uppercase;
+                display: block;
+                margin-bottom: 5px;
+            ">BU AYIN NET KARI</small>
+            <h2 style="
+                margin: 0; 
+                color: #10b981 !important; 
+                font-size: 36px; 
+                font-weight: 900;
+                -webkit-text-fill-color: #10b981 !important;
+            ">{net_kar_tl:,.0f} TL</h2>
         </div>
     """, unsafe_allow_html=True)
 
