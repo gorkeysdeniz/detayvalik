@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import pandas as pd
 import os
@@ -10,63 +8,62 @@ import urllib.parse
 # --- 1. SAYFA AYARLARI ---
 st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
 
-# --- 2. GÜNCELLENMİŞ AKILLI STİL BLOĞU ---
+# --- 2. GÖRSEL SORUNLARI BİTİREN KESİN STİL ---
 st.markdown("""
     <style>
-        /* --- ORTAK TASARIM (HİÇ DEĞİŞMEZ) --- */
-        .main-header { color: #1e293b; font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
+        /* --- HER İKİ MOD İÇİN ORTAK TASARIM --- */
+        .main-header { font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
         .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
         .day-link { 
             display: block; text-decoration: none; padding: 15px 0; border-radius: 8px; 
             font-weight: 700; color: white !important; text-align: center; font-size: 16px;
-            border-bottom: 3px solid rgba(0,0,0,0.1);
         }
         .bos { background: #10b981 !important; } 
         .dolu { background: #ef4444 !important; } 
         .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .stat-box { flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .stat-box { flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; text-align: center; }
 
-        /* --- AYDINLIK MOD (BEYAZ TEMA) --- */
+        /* --- AYDINLIK MOD (BEMBEYAZ TEMA) --- */
         @media (prefers-color-scheme: light) {
-            html, body, [data-testid="stAppViewContainer"], .stApp {
-                background-color: #FFFFFF !important; /* BEMBEYAZ ARKA PLAN */
+            .stApp, [data-testid="stAppViewContainer"] { background-color: #FFFFFF !important; }
+            /* Yazıları Koyu Lacivert Yap */
+            h1, h2, h3, p, label, span, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
+                color: #1e293b !important;
+                -webkit-text-fill-color: #1e293b !important;
             }
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], label, p, span, h1, h2, h3 {
-                color: #1e293b !important; /* KOYU LACİVERT/SİYAH YAZILAR */
-            }
-            .stat-box { background: #FFFFFF !important; border: 1px solid #E2E8F0 !important; color: #1e293b !important; }
+            .stat-box { background: #F8FAFC !important; border: 1px solid #E2E8F0 !important; }
+            .stButton button { background-color: #8FD9C8 !important; color: #000000 !important; font-weight: 700 !important; }
             .modern-table td { border: 1px solid #E2E8F0 !important; }
-            .stButton button {
-                background-color: #8FD9C8 !important;
-                color: #000000 !important; /* AYDINLIKTA SİYAH YAZI */
-                font-weight: 700 !important;
-            }
         }
 
-        /* --- KARANLIK MOD (SİYAH TEMA AMA OKUNUR) --- */
+        /* --- KARANLIK MOD (SİYAH AMA NET) --- */
         @media (prefers-color-scheme: dark) {
-            html, body, [data-testid="stAppViewContainer"], .stApp {
-                background-color: #0E1117 !important;
-            }
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], label, p, span, h1, h2, h3 {
-                color: #FFFFFF !important; /* KARANLIKTA BEYAZ YAZILAR */
+            .stApp, [data-testid="stAppViewContainer"] { background-color: #0E1117 !important; }
+            /* Yazıları Bembeyaz Yap */
+            h1, h2, h3, p, label, span, [data-testid="stMetricValue"], [data-testid="stMetricLabel"], .stMarkdown {
+                color: #FFFFFF !important;
                 -webkit-text-fill-color: #FFFFFF !important;
             }
-            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; color: #FFFFFF !important; }
-            .modern-table td { border: 1px solid #4D4D4D !important; }
-            .stButton button {
-                background-color: #8FD9C8 !important;
-                color: #FFFFFF !important; /* KARANLIKTA BEYAZ YAZI */
+            /* Kutucukları Koyu Yap ki Yazı Patlasın */
+            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; }
+            .stButton button { 
+                background-color: #8FD9C8 !important; 
+                color: #FFFFFF !important; 
                 -webkit-text-fill-color: #FFFFFF !important;
-                font-weight: 800 !important;
                 border: 1px solid #FFFFFF !important;
+                font-weight: 800 !important;
             }
+            .modern-table td { border: 1px solid #4D4D4D !important; }
+            /* Takvimdeki Pt, Sa başlıkları için */
+            .modern-table th { color: #FFFFFF !important; }
         }
 
-        /* BUTON BOYUTLARI */
+        /* BUTON VE TAB AYARLARI */
         .stButton button { border-radius: 12px !important; height: 3.5em !important; width: 100% !important; }
+        div[data-testid="stExpander"] { background-color: transparent !important; }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 # --- 2. VERİ YÖNETİMİ (EXCEL UYUMLU ;) ---
