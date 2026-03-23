@@ -15,22 +15,6 @@ def finans_kart_olustur(baslik, deger, renk="#1E293B"):
 
 
 
-# ---  (Fonksiyon Tanımı) ---
-def finans_kart_olustur(baslik, deger, renk="#1e293b"):
-    st.markdown(f"""
-        <div style="
-            background-color: {renk}; 
-            padding: 20px; 
-            border-radius: 15px; 
-            text-align: center; 
-            margin-bottom: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-            <p style="margin: 0; font-size: 14px; color: #cbd5e1 !important; font-weight: 600; text-transform: uppercase;">{baslik}</p>
-            <h2 style="margin: 5px 0 0 0; font-size: 28px; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 800;">{deger}</h2>
-        </div>
-    """, unsafe_allow_html=True)
-
 # --- 1. AYARLAR & SABİT TASARIM ---
 st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
 
@@ -95,8 +79,7 @@ st.markdown("""
 
 
 
-
-# --- 2. VERİ YÖNETİMİ (EXCEL UYUMLU ;) ---
+# --- 2. VERİ YÖNETİMİ (GÜNCELLENMİŞ VE GÜVENLİ) ---
 REZ_FILE = "rez.csv"
 COL_REZ = ["Tarih", "Ad Soyad", "Tel", "Ucret", "Gece", "Not", "Durum", "Toplam", "Kapora"]
 
@@ -104,13 +87,24 @@ def load_data():
     if not os.path.exists(REZ_FILE): 
         pd.DataFrame(columns=COL_REZ).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
     try:
-        return pd.read_csv(REZ_FILE, sep=';', encoding='utf-8-sig').reindex(columns=COL_REZ, fill_value="")
+        # 1. Önce veriyi dosyadan okuyoruz
+        temp_df = pd.read_csv(REZ_FILE, sep=';', encoding='utf-8-sig')
+        
+        # 2. Rakamları garantiye alıyoruz (Hata almanı engelleyen kısım burası)
+        temp_df['Toplam'] = pd.to_numeric(temp_df['Toplam'], errors='coerce').fillna(0)
+        temp_df['Ucret'] = pd.to_numeric(temp_df['Ucret'], errors='coerce').fillna(0)
+        temp_df['Gece'] = pd.to_numeric(temp_df['Gece'], errors='coerce').fillna(1)
+        
+        # 3. Sütunları hizalayıp veriyi sisteme teslim ediyoruz
+        return temp_df.reindex(columns=COL_REZ, fill_value="")
     except:
+        # Dosya okumada hata çıkarsa boş tablo döndür
         return pd.DataFrame(columns=COL_REZ)
 
 def save_data(df_to_save):
     df_to_save.to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
 
+# Veriyi bu güncel fonksiyonla çekiyoruz
 df = load_data()
 
 # --- 3. ANA PANEL ---
@@ -298,13 +292,20 @@ with t_rez:
             csv_data = final_table.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
             st.download_button("📥 Excel Listesi (Kişi Bazlı)", data=csv_data, file_name="Detayvalik_Rezv.csv", mime='text/csv')
             
-        with col_del:
-            sil_liste = summary['Ad Soyad'].unique().tolist()
-            secilen_sil = st.selectbox("Kayıt Sil", ["Seçiniz..."] + sil_liste)
-            if secilen_sil != "Seçiniz...":
-                if st.button(f"❌ {secilen_sil} Sil"):
-                    df = df[df['Ad Soyad'] != secilen_sil]
+        wwith col_del:
+            # Silme listesi için "İsim - Telefon" kombinasyonu oluşturuyoruz (Daha güvenli)
+            sil_opsiyonlari = summary.apply(lambda x: f"{x['Ad Soyad']} ({x['Tel']})", axis=1).tolist()
+            secilen_sil_metin = st.selectbox("Silinecek Rezervasyon", ["Seçiniz..."] + sil_opsiyonlari)
+            
+            if secilen_sil_metin != "Seçiniz...":
+                # Parantez içindeki telefon numarasını geri ayıklıyoruz
+                secilen_tel = secilen_sil_metin.split('(')[-1].replace(')', '').strip()
+                
+                if st.button(f"❌ Kaydı Sil"):
+                    # Sadece o telefon numarasına ait tüm günleri (rezervasyonu) siler
+                    df = df[df['Tel'].astype(str) != str(secilen_tel)]
                     save_data(df)
+                    st.success(f"{secilen_tel} numaralı kayıt silindi!")
                     st.rerun()
 
 # --- TAB 3: FİNANSAL TABLO (PROFESYONEL GÖRÜNÜM) ---
