@@ -5,9 +5,10 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 # --- AYDINLIK MOD & SOFT TASARIM ---
+
 st.markdown("""
     <style>
-        /* 1. TARAYICIYA AYDINLIK MODU DAYAT */
+        /* 1. BALYOZ KOMUTU: Tarayıcıya bu sitenin SADECE aydınlık olduğunu zorla öğretir */
         :root {
             color-scheme: light !important;
         }
@@ -17,45 +18,34 @@ st.markdown("""
             background-color: #FDFCF9 !important;
         }
 
-        /* 3. HAYALET YAZILARI (CİRO, DOLULUK VB.) SİMSİYAH YAP */
-        /* opacity: 1 ve -webkit zorlaması iPhone için kritiktir */
+        /* 3. TÜM METİNLERİ SİMSİYAH YAP (ZORUNLU) */
+        /* opacity: 1 ve -webkit zorlaması iPhone'daki hayalet yazıları bitirir */
         [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
         [data-testid="stMarkdownContainer"] p, label, span, h1, h2, h3 {
-            color: #000000 !important;
+            color: #1A1A1B !important;
             opacity: 1 !important;
-            -webkit-text-fill-color: #000000 !important;
+            -webkit-text-fill-color: #1A1A1B !important;
         }
 
-        /* 4. TÜM BUTONLARI OKUNUR YAP (MİNT + SİYAH YAZI) */
-        .stButton button, div.stButton > button {
-            background-color: #8FD9C8 !important;
-            color: #000000 !important;
-            font-weight: 800 !important;
-            border: 2px solid #5FB39F !important;
-            border-radius: 12px !important;
-            height: 3.5em !important;
-            width: 100% !important;
-        }
-
-        /* 5. METRİK KARTLARINI BELİRGİNLEŞTİR */
+        /* 4. METRİK KARTLARINI (CİRO, DOLULUK) BELİRGİNLEŞTİR */
         div[data-testid="stMetric"] {
             background-color: #FFFFFF !important;
             border: 1px solid #E0DDD7 !important;
             border-radius: 12px !important;
             padding: 15px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
         }
 
-        /* 6. GİRİŞ KUTULARI */
-        input, div[data-baseweb="input"], div[data-baseweb="select"] {
-            background-color: #FFFFFF !important;
-            color: #000000 !important;
-            border: 1px solid #DCD9D2 !important;
+        /* 5. BUTONLARI OKUNUR YAP (MİNT + SİYAH YAZI) */
+        .stButton button, div.stButton > button {
+            background-color: #8FD9C8 !important;
+            color: #1A1A1B !important;
+            font-weight: 800 !important;
+            border: 2px solid #5FB39F !important;
+            border-radius: 12px !important;
         }
     </style>
 """, unsafe_allow_html=True)
-
-
-
 
 
 
