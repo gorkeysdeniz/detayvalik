@@ -7,47 +7,34 @@ import urllib.parse
 # --- AYDINLIK MOD & SOFT TASARIM ---
 st.markdown("""
     <style>
-        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA */
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
-            background-color: #FDFCF9 !important;
-        }
-
-        /* 2. HER ŞEYİN RENGİNİ SİYAH YAP (ZORUNLU) */
-        /* Bu komut hayalet yazıları (Ciro, Doluluk vb.) direkt simsiyah yapar */
-        * {
-            color: #1A1A1B !important;
-        }
-
-        /* 3. METRİK KARTLARI (ÖZELLİKLE SENİN GÖRÜNTÜDEKİLER) */
-        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], [data-testid="stMetricDelta"] {
-            color: #1A1A1B !important;
-        }
-
-        /* 4. TABLO VE VERİ GİRİŞ ALANLARI */
-        input, select, textarea, div[data-baseweb="select"] {
-            background-color: #FFFFFF !important;
-            color: #1A1A1B !important;
-            border: 1px solid #DCD9D2 !important;
-        }
-
-        /* 5. ALTTAKİ KARTLARIN ARKA PLANINI HAFİF BELİRGİN YAP */
-        div[data-testid="stMetric"] {
-            background-color: #FFFFFF;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border: 1px solid #F0EEE9;
-        }
-
-        /* 6. BUTONLAR - SOFT MİNT */
+        /* 1. BUTONLARI VE İÇİNDEKİ YAZILARI DÜZELT */
         .stButton>button {
-            background-color: #8FD9C8 !important;
-            color: #1A1A1B !important;
-            border-radius: 10px !important;
-            font-weight: bold !important;
+            background-color: #8FD9C8 !important; /* Soft Mint Arka Plan */
+            color: #000000 !important;          /* İÇİNDEKİ YAZI SİMSİYAH */
+            border-radius: 12px !important;
+            border: 2px solid #7ECEA9 !important; /* Kenarlık biraz daha koyu olsun ki belirginleşsin */
+            font-weight: 800 !important;         /* Yazıyı kalınlaştır */
+            width: 100% !important;
+            height: 3.5em !important;
+            font-size: 18px !important;          /* Yazı boyutunu büyüt */
+            display: block !important;
+        }
+
+        /* 2. BUTONA BASILDIĞINDA VEYA ÜZERİNE GELİNDİĞİNDE */
+        .stButton>button:hover, .stButton>button:active, .stButton>button:focus {
+            background-color: #7ECEA9 !important; /* Hafif koyu yeşil */
+            color: #000000 !important;            /* Yazı hala siyah kalsın */
+            border: 2px solid #1A1A1B !important;
+        }
+
+        /* 3. METRİK VE DİĞER YAZILARI ZORLA SİYAH YAP */
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], label, p {
+            color: #000000 !important;
+            font-weight: 700 !important;
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
