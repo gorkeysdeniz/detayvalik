@@ -1,7 +1,0 @@
-[theme]
-primaryColor = "#8FD9C8"          # Butonlar ve vurgu renkleri (Mint)
-backgroundColor = "#FDFCF9"       # Ana arka plan (Krem)
-secondaryBackgroundColor = "#F0EEE9" # Yan menü ve input alanları
-textColor = "#1A1A1B"             # Yazı rengi (Koyu Antrasit)
-font = "sans serif"
-base = "light"                    # İŞTE KRİTİK KOMUT: Her zaman aydınlık mod
