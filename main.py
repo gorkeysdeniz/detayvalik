@@ -1,4 +1,5 @@
 
+
 import streamlit as st
 import pandas as pd
 import os
@@ -6,13 +7,13 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 
-# --- 1. SAYFA AYARLARI (İLK BURASI ÇALIŞMALI) ---
+# --- 1. SAYFA AYARLARI ---
 st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
 
-# --- 2. TEK VE BASKIN STİL BLOĞU ---
+# --- 2. GÜNCELLENMİŞ AKILLI STİL BLOĞU ---
 st.markdown("""
     <style>
-        /* --- GENEL TASARIM VE FONT --- */
+        /* --- ORTAK TASARIM (HİÇ DEĞİŞMEZ) --- */
         .main-header { color: #1e293b; font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
         .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
         .day-link { 
@@ -22,93 +23,51 @@ st.markdown("""
         }
         .bos { background: #10b981 !important; } 
         .dolu { background: #ef4444 !important; } 
+        .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .stat-box { flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* --- KARANLIK MOD AYARLARI --- */
+        /* --- AYDINLIK MOD (BEYAZ TEMA) --- */
+        @media (prefers-color-scheme: light) {
+            html, body, [data-testid="stAppViewContainer"], .stApp {
+                background-color: #FFFFFF !important; /* BEMBEYAZ ARKA PLAN */
+            }
+            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], label, p, span, h1, h2, h3 {
+                color: #1e293b !important; /* KOYU LACİVERT/SİYAH YAZILAR */
+            }
+            .stat-box { background: #FFFFFF !important; border: 1px solid #E2E8F0 !important; color: #1e293b !important; }
+            .modern-table td { border: 1px solid #E2E8F0 !important; }
+            .stButton button {
+                background-color: #8FD9C8 !important;
+                color: #000000 !important; /* AYDINLIKTA SİYAH YAZI */
+                font-weight: 700 !important;
+            }
+        }
+
+        /* --- KARANLIK MOD (SİYAH TEMA AMA OKUNUR) --- */
         @media (prefers-color-scheme: dark) {
-            html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            html, body, [data-testid="stAppViewContainer"], .stApp {
                 background-color: #0E1117 !important;
             }
-            /* Karanlıkta tüm yazıları beyaza zorla */
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
-            [data-testid="stMarkdownContainer"] p, label, span, h1, h2, h3, small {
-                color: #FFFFFF !important;
+            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], label, p, span, h1, h2, h3 {
+                color: #FFFFFF !important; /* KARANLIKTA BEYAZ YAZILAR */
                 -webkit-text-fill-color: #FFFFFF !important;
-                opacity: 1 !important;
             }
-            /* Butonlar: Mint + Beyaz Yazı */
-            .stButton button, div.stButton > button {
+            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; color: #FFFFFF !important; }
+            .modern-table td { border: 1px solid #4D4D4D !important; }
+            .stButton button {
                 background-color: #8FD9C8 !important;
-                color: #FFFFFF !important;
+                color: #FFFFFF !important; /* KARANLIKTA BEYAZ YAZI */
                 -webkit-text-fill-color: #FFFFFF !important;
                 font-weight: 800 !important;
                 border: 1px solid #FFFFFF !important;
             }
-            /* Takvim Çizgileri ve Kutular */
-            input, div[data-baseweb="input"], div[data-baseweb="select"], .modern-table td {
-                border: 1px solid #4D4D4D !important;
-                background-color: #1A1C24 !important;
-                color: #FFFFFF !important;
-            }
-            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; color: white !important; }
         }
 
-        /* --- AYDINLIK MOD AYARLARI --- */
-        @media (prefers-color-scheme: light) {
-            html, body, [data-testid="stAppViewContainer"] {
-                background-color: #FDFCF9 !important;
-            }
-            /* Aydınlıkta buton yazıları siyah */
-            .stButton button, div.stButton > button {
-                background-color: #8FD9C8 !important;
-                color: #000000 !important;
-                -webkit-text-fill-color: #000000 !important;
-                font-weight: 700 !important;
-            }
-            .stat-box { background: white !important; border: 1px solid #E2E8F0 !important; color: black !important; }
-            .modern-table td { border: 1px solid #E0DDD7 !important; }
-        }
-
-        /* --- ORTAK BUTON VE KUTU ÖLÇÜLERİ --- */
+        /* BUTON BOYUTLARI */
         .stButton button { border-radius: 12px !important; height: 3.5em !important; width: 100% !important; }
-        .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .stat-box { 
-            flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; 
-            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
     </style>
 """, unsafe_allow_html=True)
 
-
-# --- 1. AYARLAR & SABİT TASARIM ---
-st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
-
-st.markdown("""
-    <style>
-    .stApp { background-color: #F8FAFC !important; }
-    .main-header { color: #1e293b; font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
-    
-    /* Dashboard Kutuları - Esnek ve Kaymayan Yapı */
-    .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-    .stat-box { 
-        flex: 1; min-width: 120px; background: white; border: 1px solid #E2E8F0; 
-        padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
-    .day-link { 
-        display: block; text-decoration: none; padding: 15px 0; border-radius: 8px; 
-        font-weight: 700; color: white !important; text-align: center; font-size: 16px;
-        border-bottom: 3px solid rgba(0,0,0,0.1);
-    }
-    .bos { background: #10b981 !important; } 
-    .dolu { background: #ef4444 !important; } 
-    
-    .info-card { 
-        background: white; padding: 20px; border-radius: 12px; 
-        border-left: 8px solid #ef4444; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin: 15px 0;
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
 # --- 2. VERİ YÖNETİMİ (EXCEL UYUMLU ;) ---
 REZ_FILE = "rez.csv"
