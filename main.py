@@ -8,70 +8,71 @@ import urllib.parse
 
 st.markdown("""
     <style>
-        /* --- 1. KARANLIK MOD OTOMATİK AYARLARI --- */
+        /* 1. KARANLIK MOD OTOMATİK ALGILAMA */
         @media (prefers-color-scheme: dark) {
-            /* Arka planı tamamen siyah yapma, soft bir koyu ton yap */
-            html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
+            /* Arka planı yumuşak bir koyu tona çek */
+            html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
                 background-color: #0E1117 !important;
             }
 
-            /* Karanlıkta kaybolan Ciro, Doluluk gibi yazıları BEYAZ yap */
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
-            [data-testid="stMarkdownContainer"] p, label, span, h1, h2, h3 {
+            /* HAYALET YAZILARI (CİRO, DOLULUK VB.) BEYAZA ZORLA */
+            /* Streamlit'in tüm metin sınıflarını tek tek hedefliyoruz */
+            [data-testid="stMetricValue"], 
+            [data-testid="stMetricLabel"], 
+            [data-testid="stMarkdownContainer"] p, 
+            [data-testid="stWidgetLabel"] label, 
+            [data-testid="stText"],
+            span, h1, h2, h3, small {
                 color: #FFFFFF !important;
                 -webkit-text-fill-color: #FFFFFF !important;
                 opacity: 1 !important;
             }
 
-            /* TAKVİM ÇİZGİLERİNİ VE KUTULARI BELİRGİNLEŞTİR */
-            input, div[data-baseweb="input"], div[data-baseweb="select"], .stDataFrame {
-                border: 1px solid #4D4D4D !important;
-                background-color: #1A1C24 !important;
-                color: #FFFFFF !important;
-            }
-
-            /* BUTONLAR: Mint Yeşil kalsın ama yazısı BEYAZ ve KALIN olsun */
+            /* BUTONLAR: Mint Yeşil + BEYAZ VE KALIN YAZI */
             .stButton button, div.stButton > button {
                 background-color: #8FD9C8 !important;
                 color: #FFFFFF !important;           /* YAZI BEYAZ */
                 -webkit-text-fill-color: #FFFFFF !important;
                 font-weight: 800 !important;
-                border: 1px solid #FFFFFF !important; /* Etrafına ince beyaz hat */
+                border: 1px solid #FFFFFF !important;
+            }
+
+            /* TAKVİM VE GİRİŞ KUTULARI (ÇİZGİLERİN GÖRÜNMESİ İÇİN) */
+            input, div[data-baseweb="input"], div[data-baseweb="select"] {
+                border: 1px solid #4D4D4D !important;
+                background-color: #1A1C24 !important;
+                color: #FFFFFF !important;
             }
             
-            /* METRİK KARTLARI (Karanlıkta belirgin kutucuklar) */
-            div[data-testid="stMetric"] {
-                background-color: #1A1C24 !important;
-                border: 1px solid #33363F !important;
-                border-radius: 12px !important;
+            /* TAKVİM TABLOSU ÇİZGİLERİ */
+            .modern-table, .modern-table th, .modern-table td {
+                border: 1px solid #4D4D4D !important;
             }
         }
 
-        /* --- 2. AYDINLIK MOD (MEVCUT SOFT HALİNİ KORUR) --- */
+        /* 2. AYDINLIK MOD (ORİJİNAL TASARIMIN) */
         @media (prefers-color-scheme: light) {
             html, body, [data-testid="stAppViewContainer"] {
                 background-color: #FDFCF9 !important;
             }
             .stButton button {
                 background-color: #8FD9C8 !important;
-                color: #1A1A1B !important; /* Aydınlıkta yazı siyah */
+                color: #1A1A1B !important; /* Aydınlıkta siyah yazı */
                 font-weight: 700 !important;
             }
             [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
                 color: #1A1A1B !important;
             }
+            .modern-table td {
+                border: 1px solid #E0DDD7 !important;
+            }
         }
 
-        /* --- 3. ORTAK TASARIM (HER İKİ MODDA DA ŞIK DURUR) --- */
+        /* 3. ORTAK BUTON ÖLÇÜLERİ */
         .stButton button {
             border-radius: 12px !important;
             height: 3.5em !important;
             width: 100% !important;
-            transition: 0.3s;
-        }
-        /* Takvim Tablosu Çizgileri İçin Zorlama */
-        .modern-table td {
-            border: 1px solid rgba(128, 128, 128, 0.2);
         }
     </style>
 """, unsafe_allow_html=True)
