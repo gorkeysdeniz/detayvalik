@@ -321,9 +321,9 @@ with t_fin:
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown(f"""
-        <div style="background:#1e293b; color:white; padding:20px; border-radius:15px; text-align:center; margin-top:15px; border-bottom: 5px solid #10b981;">
-            <small style="opacity:0.8;">BU AYIN NET KARI</small>
-            <h2 style="margin:0; color:#10b981;">{net_kar_tl:,.0f} TL</h2>
+        <div style="background:#FFFFFF; color:#1e293b; padding:20px; border-radius:15px; text-align:center; margin-top:15px; border: 2px solid #10b981; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+            <small style="color: #64748b; font-weight:bold; letter-spacing:1px;">BU AYIN NET KARI</small>
+            <h2 style="margin:0; color:#10b981; font-size:32px; -webkit-text-fill-color: #10b981;">{net_kar_tl:,.0f} TL</h2>
         </div>
     """, unsafe_allow_html=True)
 
