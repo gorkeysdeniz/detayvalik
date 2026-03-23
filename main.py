@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
 import os
+REZ_FILE = os.path.join(os.getcwd(), 'rez.csv')
 from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 from github import Github
+
 
 def finans_kart_olustur(baslik, deger, renk="#1E293B"):
     st.markdown(f"""
