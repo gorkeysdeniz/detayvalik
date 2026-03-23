@@ -5,65 +5,57 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 
-# --- 1. AYARLAR & SABİT TASARIM ---
-st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
-
-# --- 2. GÖRSEL SORUNLARI BİTİREN KESİN STİL ---
 st.markdown("""
     <style>
-        /* TÜM SİSTEMİ SIFIRLA VE MODA GÖRE RENKLENDİR */
-        
-        /* 1. AYDINLIK MOD (BEMBEYAZ TEMA) */
+        /* --- 1. AYDINLIK MOD AYARLARI (Otomatik Algılar) --- */
         @media (prefers-color-scheme: light) {
-            .stApp, [data-testid="stAppViewContainer"], .main {
-                background-color: #FFFFFF !important;
-            }
-            /* Yazıları Siyah Yap */
-            h1, h2, h3, p, span, label, div, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
-                color: #1e293b !important;
+            .stApp { background-color: #FFFFFF !important; }
+            /* Yazıları net siyah/lacivert yap */
+            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
+            p, label, span, h1, h2, h3 { 
+                color: #1e293b !important; 
                 -webkit-text-fill-color: #1e293b !important;
             }
-            /* Kartları Hafif Gri Yap */
-            .stat-box { background: #F8FAFC !important; border: 1px solid #E2E8F0 !important; }
-            .modern-table td { border: 1px solid #E2E8F0 !important; }
-            /* Buton Yazısı Siyah */
-            .stButton button { color: #000000 !important; font-weight: 700 !important; }
+            /* Kartların arka planını çok hafif gri yap ki beyaz zemin üzerinde seçilsin */
+            div[data-testid="stMetric"], .stat-box { 
+                background-color: #F8FAFC !important; 
+                border: 1px solid #E2E8F0 !important; 
+            }
         }
 
-        /* 2. KARANLIK MOD (SİYAH TEMA) */
+        /* --- 2. KARANLIK MOD AYARLARI (Otomatik Algılar) --- */
         @media (prefers-color-scheme: dark) {
-            .stApp, [data-testid="stAppViewContainer"], .main {
-                background-color: #0E1117 !important;
-            }
-            /* Yazıları Beyaz Yap */
-            h1, h2, h3, p, span, label, div, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
-                color: #FFFFFF !important;
+            .stApp { background-color: #0E1117 !important; }
+            /* Yazıları bembeyaz yap */
+            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
+            p, label, span, h1, h2, h3 { 
+                color: #FFFFFF !important; 
                 -webkit-text-fill-color: #FFFFFF !important;
             }
-            /* Kartları Koyu Yap */
-            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; }
-            .modern-table td { border: 1px solid #4D4D4D !important; }
-            /* Buton Yazısı Beyaz */
-            .stButton button { color: #FFFFFF !important; font-weight: 800 !important; border: 1px solid #FFFFFF !important; }
+            /* Kartları koyu gri yap */
+            div[data-testid="stMetric"], .stat-box { 
+                background-color: #1A1C24 !important; 
+                border: 1px solid #33363F !important; 
+            }
         }
 
-        /* ORTAK TASARIM ELEMANLARI */
-        .main-header { font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
-        .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
-        .day-link { 
-            display: block; text-decoration: none; padding: 15px 0; border-radius: 8px; 
-            font-weight: 700; color: white !important; text-align: center; font-size: 16px;
+        /* --- 3. ORTAK VE SABİT TASARIM (Renklerden Bağımsız) --- */
+        .stButton button {
+            background-color: #8FD9C8 !important;
+            color: #1e293b !important; /* Buton yazısı her zaman okunsun */
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            height: 3.5em !important;
+            width: 100% !important;
         }
-        .bos { background: #10b981 !important; } 
-        .dolu { background: #ef4444 !important; } 
-        .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .stat-box { flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; text-align: center; }
-        .stButton button { background-color: #8FD9C8 !important; border-radius: 12px !important; height: 3.5em !important; width: 100% !important; }
         
-        /* Tablar (Sekmeler) İçin Düzeltme */
-        button[data-baseweb="tab"] p { color: inherit !important; }
+        .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; }
+        .day-link { display: block; text-decoration: none; padding: 15px 0; border-radius: 8px; font-weight: 700; color: white !important; text-align: center; }
+        .bos { background: #10b981 !important; } 
+        .dolu { background: #ef4444 !important; }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
