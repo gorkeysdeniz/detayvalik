@@ -5,13 +5,49 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 
-# --- 1. SAYFA AYARLARI ---
+# --- 1. AYARLAR & SABİT TASARIM ---
 st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
 
 # --- 2. GÖRSEL SORUNLARI BİTİREN KESİN STİL ---
 st.markdown("""
     <style>
-        /* --- HER İKİ MOD İÇİN ORTAK TASARIM --- */
+        /* TÜM SİSTEMİ SIFIRLA VE MODA GÖRE RENKLENDİR */
+        
+        /* 1. AYDINLIK MOD (BEMBEYAZ TEMA) */
+        @media (prefers-color-scheme: light) {
+            .stApp, [data-testid="stAppViewContainer"], .main {
+                background-color: #FFFFFF !important;
+            }
+            /* Yazıları Siyah Yap */
+            h1, h2, h3, p, span, label, div, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
+                color: #1e293b !important;
+                -webkit-text-fill-color: #1e293b !important;
+            }
+            /* Kartları Hafif Gri Yap */
+            .stat-box { background: #F8FAFC !important; border: 1px solid #E2E8F0 !important; }
+            .modern-table td { border: 1px solid #E2E8F0 !important; }
+            /* Buton Yazısı Siyah */
+            .stButton button { color: #000000 !important; font-weight: 700 !important; }
+        }
+
+        /* 2. KARANLIK MOD (SİYAH TEMA) */
+        @media (prefers-color-scheme: dark) {
+            .stApp, [data-testid="stAppViewContainer"], .main {
+                background-color: #0E1117 !important;
+            }
+            /* Yazıları Beyaz Yap */
+            h1, h2, h3, p, span, label, div, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
+                color: #FFFFFF !important;
+                -webkit-text-fill-color: #FFFFFF !important;
+            }
+            /* Kartları Koyu Yap */
+            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; }
+            .modern-table td { border: 1px solid #4D4D4D !important; }
+            /* Buton Yazısı Beyaz */
+            .stButton button { color: #FFFFFF !important; font-weight: 800 !important; border: 1px solid #FFFFFF !important; }
+        }
+
+        /* ORTAK TASARIM ELEMANLARI */
         .main-header { font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
         .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
         .day-link { 
@@ -22,47 +58,13 @@ st.markdown("""
         .dolu { background: #ef4444 !important; } 
         .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .stat-box { flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; text-align: center; }
-
-        /* --- AYDINLIK MOD (BEMBEYAZ TEMA) --- */
-        @media (prefers-color-scheme: light) {
-            .stApp, [data-testid="stAppViewContainer"] { background-color: #FFFFFF !important; }
-            /* Yazıları Koyu Lacivert Yap */
-            h1, h2, h3, p, label, span, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
-                color: #1e293b !important;
-                -webkit-text-fill-color: #1e293b !important;
-            }
-            .stat-box { background: #F8FAFC !important; border: 1px solid #E2E8F0 !important; }
-            .stButton button { background-color: #8FD9C8 !important; color: #000000 !important; font-weight: 700 !important; }
-            .modern-table td { border: 1px solid #E2E8F0 !important; }
-        }
-
-        /* --- KARANLIK MOD (SİYAH AMA NET) --- */
-        @media (prefers-color-scheme: dark) {
-            .stApp, [data-testid="stAppViewContainer"] { background-color: #0E1117 !important; }
-            /* Yazıları Bembeyaz Yap */
-            h1, h2, h3, p, label, span, [data-testid="stMetricValue"], [data-testid="stMetricLabel"], .stMarkdown {
-                color: #FFFFFF !important;
-                -webkit-text-fill-color: #FFFFFF !important;
-            }
-            /* Kutucukları Koyu Yap ki Yazı Patlasın */
-            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; }
-            .stButton button { 
-                background-color: #8FD9C8 !important; 
-                color: #FFFFFF !important; 
-                -webkit-text-fill-color: #FFFFFF !important;
-                border: 1px solid #FFFFFF !important;
-                font-weight: 800 !important;
-            }
-            .modern-table td { border: 1px solid #4D4D4D !important; }
-            /* Takvimdeki Pt, Sa başlıkları için */
-            .modern-table th { color: #FFFFFF !important; }
-        }
-
-        /* BUTON VE TAB AYARLARI */
-        .stButton button { border-radius: 12px !important; height: 3.5em !important; width: 100% !important; }
-        div[data-testid="stExpander"] { background-color: transparent !important; }
+        .stButton button { background-color: #8FD9C8 !important; border-radius: 12px !important; height: 3.5em !important; width: 100% !important; }
+        
+        /* Tablar (Sekmeler) İçin Düzeltme */
+        button[data-baseweb="tab"] p { color: inherit !important; }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
