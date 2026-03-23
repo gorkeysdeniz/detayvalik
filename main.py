@@ -1,83 +1,82 @@
+
 import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime, timedelta
 import calendar
 import urllib.parse
-# --- AYDINLIK MOD & SOFT TASARIM ---
 
+# --- 1. SAYFA AYARLARI (İLK BURASI ÇALIŞMALI) ---
+st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
+
+# --- 2. TEK VE BASKIN STİL BLOĞU ---
 st.markdown("""
     <style>
-        /* 1. KARANLIK MOD OTOMATİK ALGILAMA */
+        /* --- GENEL TASARIM VE FONT --- */
+        .main-header { color: #1e293b; font-size: 24px; font-weight: 800; border-bottom: 3px solid #D6BD98; padding-bottom: 10px; margin-bottom: 20px; }
+        .modern-table { width: 100%; border-collapse: separate; border-spacing: 5px; table-layout: fixed; }
+        .day-link { 
+            display: block; text-decoration: none; padding: 15px 0; border-radius: 8px; 
+            font-weight: 700; color: white !important; text-align: center; font-size: 16px;
+            border-bottom: 3px solid rgba(0,0,0,0.1);
+        }
+        .bos { background: #10b981 !important; } 
+        .dolu { background: #ef4444 !important; } 
+
+        /* --- KARANLIK MOD AYARLARI --- */
         @media (prefers-color-scheme: dark) {
-            /* Arka planı yumuşak bir koyu tona çek */
             html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
                 background-color: #0E1117 !important;
             }
-
-            /* HAYALET YAZILARI (CİRO, DOLULUK VB.) BEYAZA ZORLA */
-            /* Streamlit'in tüm metin sınıflarını tek tek hedefliyoruz */
-            [data-testid="stMetricValue"], 
-            [data-testid="stMetricLabel"], 
-            [data-testid="stMarkdownContainer"] p, 
-            [data-testid="stWidgetLabel"] label, 
-            [data-testid="stText"],
-            span, h1, h2, h3, small {
+            /* Karanlıkta tüm yazıları beyaza zorla */
+            [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
+            [data-testid="stMarkdownContainer"] p, label, span, h1, h2, h3, small {
                 color: #FFFFFF !important;
                 -webkit-text-fill-color: #FFFFFF !important;
                 opacity: 1 !important;
             }
-
-            /* BUTONLAR: Mint Yeşil + BEYAZ VE KALIN YAZI */
+            /* Butonlar: Mint + Beyaz Yazı */
             .stButton button, div.stButton > button {
                 background-color: #8FD9C8 !important;
-                color: #FFFFFF !important;           /* YAZI BEYAZ */
+                color: #FFFFFF !important;
                 -webkit-text-fill-color: #FFFFFF !important;
                 font-weight: 800 !important;
                 border: 1px solid #FFFFFF !important;
             }
-
-            /* TAKVİM VE GİRİŞ KUTULARI (ÇİZGİLERİN GÖRÜNMESİ İÇİN) */
-            input, div[data-baseweb="input"], div[data-baseweb="select"] {
+            /* Takvim Çizgileri ve Kutular */
+            input, div[data-baseweb="input"], div[data-baseweb="select"], .modern-table td {
                 border: 1px solid #4D4D4D !important;
                 background-color: #1A1C24 !important;
                 color: #FFFFFF !important;
             }
-            
-            /* TAKVİM TABLOSU ÇİZGİLERİ */
-            .modern-table, .modern-table th, .modern-table td {
-                border: 1px solid #4D4D4D !important;
-            }
+            .stat-box { background: #1A1C24 !important; border: 1px solid #33363F !important; color: white !important; }
         }
 
-        /* 2. AYDINLIK MOD (ORİJİNAL TASARIMIN) */
+        /* --- AYDINLIK MOD AYARLARI --- */
         @media (prefers-color-scheme: light) {
             html, body, [data-testid="stAppViewContainer"] {
                 background-color: #FDFCF9 !important;
             }
-            .stButton button {
+            /* Aydınlıkta buton yazıları siyah */
+            .stButton button, div.stButton > button {
                 background-color: #8FD9C8 !important;
-                color: #1A1A1B !important; /* Aydınlıkta siyah yazı */
+                color: #000000 !important;
+                -webkit-text-fill-color: #000000 !important;
                 font-weight: 700 !important;
             }
-            [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
-                color: #1A1A1B !important;
-            }
-            .modern-table td {
-                border: 1px solid #E0DDD7 !important;
-            }
+            .stat-box { background: white !important; border: 1px solid #E2E8F0 !important; color: black !important; }
+            .modern-table td { border: 1px solid #E0DDD7 !important; }
         }
 
-        /* 3. ORTAK BUTON ÖLÇÜLERİ */
-        .stButton button {
-            border-radius: 12px !important;
-            height: 3.5em !important;
-            width: 100% !important;
+        /* --- ORTAK BUTON VE KUTU ÖLÇÜLERİ --- */
+        .stButton button { border-radius: 12px !important; height: 3.5em !important; width: 100% !important; }
+        .stat-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .stat-box { 
+            flex: 1; min-width: 120px; padding: 15px; border-radius: 10px; 
+            text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
     </style>
 """, unsafe_allow_html=True)
-
-
 
 
 # --- 1. AYARLAR & SABİT TASARIM ---
