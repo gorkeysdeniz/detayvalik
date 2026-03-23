@@ -5,6 +5,24 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 
+
+
+# ---  (Fonksiyon Tanımı) ---
+def finans_kart_olustur(baslik, deger, renk="#1e293b"):
+    st.markdown(f"""
+        <div style="
+            background-color: {renk}; 
+            padding: 20px; 
+            border-radius: 15px; 
+            text-align: center; 
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+            <p style="margin: 0; font-size: 14px; color: #cbd5e1 !important; font-weight: 600; text-transform: uppercase;">{baslik}</p>
+            <h2 style="margin: 5px 0 0 0; font-size: 28px; color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; font-weight: 800;">{deger}</h2>
+        </div>
+    """, unsafe_allow_html=True)
+
 # --- 1. AYARLAR & SABİT TASARIM ---
 st.set_page_config(page_title="Villa Yönetim Paneli", layout="wide", page_icon="🏡")
 
@@ -312,36 +330,16 @@ with t_fin:
     
     net_kar_tl = brut_gelir - vergi_yukü - toplam_gider_tl
 
-    # 3. GÖRSEL PANEL (İskelet Tasarımıyla Aynı)
-    # HER İKİ MODDA DA (AYDINLIK/KARANLIK) CAM GİBİ OKUNAN KUTU
-    st.markdown(f"""
-        <div style="
-            background-color: #262730; 
-            padding: 25px; 
-            border-radius: 15px; 
-            text-align: center; 
-            margin-top: 20px; 
-            border: 1px solid #464855;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        ">
-            <small style="
-                color: #A1A1AA; 
-                font-weight: 800; 
-                letter-spacing: 1.5px; 
-                text-transform: uppercase;
-                display: block;
-                margin-bottom: 5px;
-            ">BU AYIN NET KARI</small>
-            <h2 style="
-                margin: 0; 
-                color: #10b981 !important; 
-                font-size: 36px; 
-                font-weight: 900;
-                -webkit-text-fill-color: #10b981 !important;
-            ">{net_kar_tl:,.0f} TL</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    # 3. GÖRSEL PANEL (YENİLENMİŞ - HER MODDA OKUNUR)
+    col1, col2 = st.columns(2)
 
+    with col1:
+        finans_kart_olustur("Brüt Ciro", f"{brut_gelir:,.0f} TL", "#1e293b")
+        finans_kart_olustur("Gider Toplamı", f"-{toplam_gider_tl:,.0f} TL", "#ef4444")
+
+    with col2:
+        finans_kart_olustur("Vergi Tahmini", f"-{vergi_yukü:,.0f} TL", "#334155")
+        finans_kart_olustur("BU AYIN NET KARI", f"{net_kar_tl:,.0f} TL", "#10b981")
     st.divider()
 
     # 4. GİDER GİRİŞ FORMU (Duplicate ID Korunmuş)
