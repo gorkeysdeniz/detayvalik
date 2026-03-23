@@ -98,16 +98,14 @@ def load_data():
         return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
         
 def save_data(df_to_save):
-    # 1. ADIM: Yerel Dosyaya Yaz (Tam yol kullanarak)
+    # 1. ADIM: Yerel Dosyaya Yaz (Yazma işlemini garantiye al)
     try:
-        # absolute path kullanarak nereye yazdığımızdan emin olalım
         full_path = os.path.abspath(REZ_FILE)
         df_to_save.to_csv(full_path, index=False, sep=',', encoding='utf-8-sig')
-        # Bu mesajı görüyorsan yerel işlem bitmiştir
-        st.sidebar.write(f"📍 Dosya konumu: {full_path}")
     except Exception as e:
         st.error(f"Yerel kayıt hatası: {e}")
-    # 2. ADIM: GitHub Yedekleme (Sadece bir kere ve doğru hizada)
+
+    # 2. ADIM: GitHub Yedekleme (Düzgün Hizalanmış)
     try:
         token = st.secrets["GITHUB_TOKEN"]
         repo_name = st.secrets["GITHUB_REPO"]
@@ -115,23 +113,27 @@ def save_data(df_to_save):
         g = Github(token)
         repo = g.get_user().get_repo(repo_name)
         
-        # İçeriği hazırla
+        # CSV içeriğini hazırla
         content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
         
         try:
-            # Önce GitHub'da dosya var mı bak ve güncelle
+            # Önce GitHub'da dosyayı bul ve güncelle
             contents = repo.get_contents("rez.csv")
             repo.update_file(contents.path, "🔄 Rezervasyon Güncellendi", content, contents.sha)
             st.toast("☁️ GitHub yedeği başarılı!", icon="✅")
-            st.rerun()
+            st.rerun() 
         except:
-            # Eğer dosya GitHub'da yoksa (404), YENİDEN OLUŞTUR
+            # Dosya GitHub'da yoksa (404), YENİDEN OLUŞTUR
             repo.create_file("rez.csv", "🆕 İlk Dosya Oluşturuldu", content)
             st.toast("🚀 Yeni dosya GitHub'da oluşturuldu!", icon="✨")
+            st.rerun()
             
     except Exception as e:
-        # Eğer internet yoksa veya Token hatalıysa sistemi durdurmaz, sadece uyarır
+        # Hata olursa ekranda kalsın, ne olduğunu görelim
         st.warning(f"⚠️ Bulut yedeği başarısız: {e}")
+
+# DİKKAT: Bu satır fonksiyonun DIŞINDA olmalı (en solda)
+df = load_data()
 
 # Bu satır save_data fonksiyonunun dışında, en altta kalmalı
 df = load_data()
