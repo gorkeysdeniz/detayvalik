@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 import calendar
 import urllib.parse
+from github import Github
 
 def finans_kart_olustur(baslik, deger, renk="#1E293B"):
     st.markdown(f"""
@@ -102,7 +103,30 @@ def load_data():
         return pd.DataFrame(columns=COL_REZ)
 
 def save_data(df_to_save):
+    # 1. Önce her zamanki gibi yerel bilgisayara/buluta kaydet
     df_to_save.to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
+    
+    # 2. GitHub'a otomatik yedekle
+    try:
+        # Streamlit Secrets'a yazdığın anahtarları çağırıyoruz
+        token = st.secrets["GITHUB_TOKEN"]
+        repo_name = st.secrets["GITHUB_REPO"]
+        
+        g = Github(token)
+        repo = g.get_user().get_repo(repo_name)
+        
+        # Dosyanın içeriğini hazırla
+        content = df_to_save.to_csv(index=False, sep=';', encoding='utf-8-sig')
+        
+        # GitHub'daki mevcut dosyayı bul ve güncelle
+        contents = repo.get_contents("rez.csv")
+        repo.update_file(contents.path, "✅ Rezervasyon Listesi Güncellendi", content, contents.sha)
+        
+        # Ekranın sağ altında küçük bir onay baloncuğu çıkar
+        st.toast("☁️ Veriler GitHub'a yedeklendi!", icon="✅")
+    except Exception as e:
+        # Bir hata olursa (internet yoksa vs.) sistemi kilitleme, sadece uyar
+        st.warning(f"⚠️ Bulut yedeği alınamadı (Yerel kayıt yapıldı): {e}")
 
 # Veriyi bu güncel fonksiyonla çekiyoruz
 df = load_data()
