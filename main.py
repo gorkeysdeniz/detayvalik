@@ -85,23 +85,16 @@ REZ_FILE = "rez.csv"
 COL_REZ = ["Tarih", "Ad Soyad", "Tel", "Ucret", "Gece", "Not", "Durum", "Toplam", "Kapora"]
 
 def load_data():
-    if not os.path.exists(REZ_FILE): 
-        pd.DataFrame(columns=COL_REZ).to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
+    if not os.path.exists(REZ_FILE):
+        # Dosya yoksa başlıklarla yeni bir tane oluştur
+        return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
     try:
-        # 1. Önce veriyi dosyadan okuyoruz
-        temp_df = pd.read_csv(REZ_FILE, sep=';', encoding='utf-8-sig')
-        
-        # 2. Rakamları garantiye alıyoruz (Hata almanı engelleyen kısım burası)
-        temp_df['Toplam'] = pd.to_numeric(temp_df['Toplam'], errors='coerce').fillna(0)
-        temp_df['Ucret'] = pd.to_numeric(temp_df['Ucret'], errors='coerce').fillna(0)
-        temp_df['Gece'] = pd.to_numeric(temp_df['Gece'], errors='coerce').fillna(1)
-        
-        # 3. Sütunları hizalayıp veriyi sisteme teslim ediyoruz
-        return temp_df.reindex(columns=COL_REZ, fill_value="")
+        # Dosyayı oku
+        return pd.read_csv(REZ_FILE, sep=';', encoding='utf-8-sig')
     except:
-        # Dosya okumada hata çıkarsa boş tablo döndür
-        return pd.DataFrame(columns=COL_REZ)
-
+        # Hata varsa boş dön
+        return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
+        
 def save_data(df_to_save):
     # 1. Önce her zamanki gibi yerel bilgisayara/buluta kaydet
     df_to_save.to_csv(REZ_FILE, index=False, sep=';', encoding='utf-8-sig')
