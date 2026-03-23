@@ -8,26 +8,41 @@ import urllib.parse
 
 st.markdown("""
     <style>
-        /* 1. BALYOZ KOMUTU: Tarayıcıya bu sitenin SADECE aydınlık olduğunu zorla öğretir */
-        :root {
-            color-scheme: light !important;
-        }
-
-        /* 2. TÜM SAYFAYI AYDINLIĞA ÇİVİLE */
+        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA (SOFT TONLARLA) */
         html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-            background-color: #FDFCF9 !important;
+            background-color: #FDFCF9 !important; /* Krem Beyaz Arka Plan */
         }
 
-        /* 3. TÜM METİNLERİ SİMSİYAH YAP (ZORUNLU) */
-        /* opacity: 1 ve -webkit zorlaması iPhone'daki hayalet yazıları bitirir */
+        /* 2. HAYALET YAZILARI VE METRİKLERİ SİMSİYAH YAP */
         [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
         [data-testid="stMarkdownContainer"] p, label, span, h1, h2, h3 {
-            color: #1A1A1B !important;
+            color: #1A1A1B !important; /* Koyu Antrasit Yazı */
             opacity: 1 !important;
             -webkit-text-fill-color: #1A1A1B !important;
         }
 
-        /* 4. METRİK KARTLARINI (CİRO, DOLULUK) BELİRGİNLEŞTİR */
+        /* 3. BUTONLARI HEDEFLE VE YAZISINI BEYAZ YAP */
+        .stButton button, div.stButton > button {
+            background-color: #8FD9C8 !important; /* Soft Mint Arka Plan */
+            color: #FFFFFF !important;           /* YAZI BEMBEYAZ */
+            border: 2px solid #5FB39F !important; /* Belirgin pastel çerçeve */
+            border-radius: 12px !important;
+            font-weight: 800 !important;         /* KALIN YAZI */
+            font-size: 18px !important;          /* Yazı boyutunu büyüt */
+            height: 3.5em !important;
+            display: block !important;
+            width: 100% !important;
+            -webkit-text-fill-color: #FFFFFF !important; /* iPhone zorlaması */
+        }
+
+        /* 4. TAKVİM ÇİZGİLERİNİ VE GİRİŞ KUTULARINI BELİRGİNLEŞTİR */
+        input, div[data-baseweb="input"], div[data-baseweb="select"] {
+            background-color: #FFFFFF !important;
+            color: #1A1A1B !important;
+            border: 2px solid #E0DDD7 !important; /* Takvim çizgileri gibi duran belirgin çerçeve */
+        }
+
+        /* 5. METRİK KARTLARINI BELİRGİNLEŞTİR */
         div[data-testid="stMetric"] {
             background-color: #FFFFFF !important;
             border: 1px solid #E0DDD7 !important;
@@ -36,17 +51,12 @@ st.markdown("""
             box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
         }
 
-        /* 5. BUTONLARI OKUNUR YAP (MİNT + SİYAH YAZI) */
-        .stButton button, div.stButton > button {
-            background-color: #8FD9C8 !important;
-            color: #1A1A1B !important;
-            font-weight: 800 !important;
-            border: 2px solid #5FB39F !important;
-            border-radius: 12px !important;
+        /* 6. GİDER EKLEME ALANINDAKİ KOYU BANNER'I SİL */
+        div[data-testid="stVerticalBlock"] > div:has(h1, h2, h3) {
+            background-color: transparent !important;
         }
     </style>
 """, unsafe_allow_html=True)
-
 
 
 
