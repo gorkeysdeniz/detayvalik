@@ -7,30 +7,50 @@ import urllib.parse
 # --- AYDINLIK MOD & SOFT TASARIM ---
 st.markdown("""
     <style>
-        /* 1. BUTONLARI VE İÇİNDEKİ YAZILARI DÜZELT */
-        .stButton>button {
-            background-color: #8FD9C8 !important; /* Soft Mint Arka Plan */
-            color: #000000 !important;          /* İÇİNDEKİ YAZI SİMSİYAH */
-            border-radius: 12px !important;
-            border: 2px solid #7ECEA9 !important; /* Kenarlık biraz daha koyu olsun ki belirginleşsin */
-            font-weight: 800 !important;         /* Yazıyı kalınlaştır */
-            width: 100% !important;
-            height: 3.5em !important;
-            font-size: 18px !important;          /* Yazı boyutunu büyüt */
-            display: block !important;
+        /* 1. TÜM SAYFAYI AYDINLIĞA ZORLA */
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            background-color: #FDFCF9 !important;
         }
 
-        /* 2. BUTONA BASILDIĞINDA VEYA ÜZERİNE GELİNDİĞİNDE */
-        .stButton>button:hover, .stButton>button:active, .stButton>button:focus {
-            background-color: #7ECEA9 !important; /* Hafif koyu yeşil */
-            color: #000000 !important;            /* Yazı hala siyah kalsın */
-            border: 2px solid #1A1A1B !important;
-        }
-
-        /* 3. METRİK VE DİĞER YAZILARI ZORLA SİYAH YAP */
-        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], label, p {
+        /* 2. TÜM METİNLERİ SİMSİYAH YAP (ÖZELLİKLE CİRO VE BUTON İÇLERİ) */
+        /* Bu satır Metric Label, Value ve Buton yazılarını kapsar */
+        [data-testid="stMetricValue"], [data-testid="stMetricLabel"], 
+        [data-testid="stMarkdownContainer"] p, label, span, .stButton button {
             color: #000000 !important;
-            font-weight: 700 !important;
+            opacity: 1 !important;
+            -webkit-text-fill-color: #000000 !important;
+        }
+
+        /* 3. BUTONLARI BELİRGİNLEŞTİR VE YAZISINI SİYAH YAP */
+        div.stButton > button {
+            background-color: #8FD9C8 !important; /* Soft Mint */
+            color: #000000 !important;           /* YAZI SİYAH */
+            font-weight: 800 !important;         /* KALIN YAZI */
+            border: 2px solid #5FB39F !important;
+            border-radius: 12px !important;
+            height: 3.5em !important;
+        }
+
+        /* 4. FINANSAL TABLO VE KARTLARI BELİRGİNLEŞTİR */
+        div[data-testid="stMetric"] {
+            background-color: #FFFFFF !important;
+            border: 1px solid #E0DDD7 !important;
+            border-radius: 12px !important;
+            padding: 15px !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+        }
+
+        /* 5. GİDER EKLEME ALANINDAKİ SİYAH BANNER'I DÜZELT */
+        /* Görüntüdeki o koyu lacivert alanı ferahlatır */
+        div[data-testid="stVerticalBlock"] > div:has(h1, h2, h3) {
+            background-color: transparent !important;
+        }
+        
+        /* 6. INPUT (GİRİŞ) KUTULARINI OKUNUR YAP */
+        input, div[data-baseweb="input"], div[data-baseweb="select"] {
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+            border: 1px solid #DCD9D2 !important;
         }
     </style>
 """, unsafe_allow_html=True)
