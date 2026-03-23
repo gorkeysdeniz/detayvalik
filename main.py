@@ -98,12 +98,15 @@ def load_data():
         return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
         
 def save_data(df_to_save):
-    # 1. ADIM: Önce yerel dosyaya kaydet (Garantici yöntem)
+    # 1. ADIM: Yerel Dosyaya Yaz (Tam yol kullanarak)
     try:
-        df_to_save.to_csv(REZ_FILE, index=False, sep=',', encoding='utf-8-sig')
+        # absolute path kullanarak nereye yazdığımızdan emin olalım
+        full_path = os.path.abspath(REZ_FILE)
+        df_to_save.to_csv(full_path, index=False, sep=',', encoding='utf-8-sig')
+        # Bu mesajı görüyorsan yerel işlem bitmiştir
+        st.sidebar.write(f"📍 Dosya konumu: {full_path}")
     except Exception as e:
         st.error(f"Yerel kayıt hatası: {e}")
-
     # 2. ADIM: GitHub Yedekleme (Sadece bir kere ve doğru hizada)
     try:
         token = st.secrets["GITHUB_TOKEN"]
@@ -120,6 +123,7 @@ def save_data(df_to_save):
             contents = repo.get_contents("rez.csv")
             repo.update_file(contents.path, "🔄 Rezervasyon Güncellendi", content, contents.sha)
             st.toast("☁️ GitHub yedeği başarılı!", icon="✅")
+            st.rerun()
         except:
             # Eğer dosya GitHub'da yoksa (404), YENİDEN OLUŞTUR
             repo.create_file("rez.csv", "🆕 İlk Dosya Oluşturuldu", content)
