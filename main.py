@@ -99,13 +99,14 @@ def load_data():
         
 def save_data(df_to_save):
     # 1. ADIM: Yerel Dosyaya Yazmayı Dene
-    try:
-        df_to_save.to_csv(REZ_FILE, index=False, sep=',', encoding='utf-8-sig')
-        st.sidebar.success("✅ Yerel dosya güncellendi.")
-    except Exception as e: # <-- Bak, tam olarak 'try' ile aynı hizada!
-        st.error(f"🚨 KRİTİK HATA: {e}")
-        st.info("Lütfen bu hatayı kopyalayıp bana gönder.")
-        st.stop()
+   # Dosyayı bulmaya çalışırken tam yolu belirtelim
+        try:
+            contents = repo.get_contents("rez.csv")
+        except:
+            # Eğer bulamazsa, hata vermek yerine yeni bir dosya yaratsın
+            repo.create_file("rez.csv", "🆕 İlk Rezervasyon Dosyası Oluşturuldu", content)
+            st.toast("🚀 Yeni rez.csv dosyası GitHub'da oluşturuldu!", icon="✨")
+            return
 
     # 2. ADIM: GitHub'a Göndermeyi Dene
     try:
