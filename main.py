@@ -98,66 +98,38 @@ def load_data():
         return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
         
 def save_data(df_to_save):
-    # 1. ADIM: Yerel Dosyaya Yazmayı Dene
-   # Dosyayı bulmaya çalışırken tam yolu belirtelim
+    # 1. ADIM: Önce yerel dosyaya kaydet (Garantici yöntem)
+    try:
+        df_to_save.to_csv(REZ_FILE, index=False, sep=',', encoding='utf-8-sig')
+    except Exception as e:
+        st.error(f"Yerel kayıt hatası: {e}")
+
+    # 2. ADIM: GitHub Yedekleme (Sadece bir kere ve doğru hizada)
+    try:
+        token = st.secrets["GITHUB_TOKEN"]
+        repo_name = st.secrets["GITHUB_REPO"]
+        
+        g = Github(token)
+        repo = g.get_user().get_repo(repo_name)
+        
+        # İçeriği hazırla
+        content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
+        
         try:
+            # Önce GitHub'da dosya var mı bak ve güncelle
             contents = repo.get_contents("rez.csv")
+            repo.update_file(contents.path, "🔄 Rezervasyon Güncellendi", content, contents.sha)
+            st.toast("☁️ GitHub yedeği başarılı!", icon="✅")
         except:
-            # Eğer bulamazsa, hata vermek yerine yeni bir dosya yaratsın
-            repo.create_file("rez.csv", "🆕 İlk Rezervasyon Dosyası Oluşturuldu", content)
-            st.toast("🚀 Yeni rez.csv dosyası GitHub'da oluşturuldu!", icon="✨")
-            return
-
-    # 2. ADIM: GitHub'a Göndermeyi Dene
-    try:
-        token = st.secrets["GITHUB_TOKEN"]
-        repo_name = st.secrets["GITHUB_REPO"]
-        
-        g = Github(token)
-        repo = g.get_user().get_repo(repo_name)
-        
-        content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
-        
-        # Dosyayı bul
-        contents = repo.get_contents("rez.csv")
-        
-        # GÜNCELLEME İŞLEMİ
-        repo.update_file(
-            contents.path, 
-            "🔄 Rezervasyon Güncellendi", 
-            content, 
-            contents.sha
-        )
-        st.toast("☁️ GitHub yedeği başarılı!", icon="✅")
-        
+            # Eğer dosya GitHub'da yoksa (404), YENİDEN OLUŞTUR
+            repo.create_file("rez.csv", "🆕 İlk Dosya Oluşturuldu", content)
+            st.toast("🚀 Yeni dosya GitHub'da oluşturuldu!", icon="✨")
+            
     except Exception as e:
-        # Burası çok önemli, hatayı bize söyleyecek:
-        st.error(f"⚠️ GitHub Yedekleme Hatası: {e}")
-        st.info("İpucu: Token yetkilerini (repo) ve Secrets ayarlarını kontrol et.")
-    
-    # 2. GitHub'a otomatik yedekle
-    try:
-        # Streamlit Secrets'a yazdığın anahtarları çağırıyoruz
-        token = st.secrets["GITHUB_TOKEN"]
-        repo_name = st.secrets["GITHUB_REPO"]
-        
-        g = Github(token)
-        repo = g.get_user().get_repo(repo_name)
-        
-        # Dosyanın içeriğini hazırla
-        content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
-        
-        # GitHub'daki mevcut dosyayı bul ve güncelle
-        contents = repo.get_contents("rez.csv")
-        repo.update_file(contents.path, "✅ Rezervasyon Listesi Güncellendi", content, contents.sha)
-        
-        # Ekranın sağ altında küçük bir onay baloncuğu çıkar
-        st.toast("☁️ Veriler GitHub'a yedeklendi!", icon="✅")
-    except Exception as e:
-        # Bir hata olursa (internet yoksa vs.) sistemi kilitleme, sadece uyar
-        st.warning(f"⚠️ Bulut yedeği alınamadı (Yerel kayıt yapıldı): {e}")
+        # Eğer internet yoksa veya Token hatalıysa sistemi durdurmaz, sadece uyarır
+        st.warning(f"⚠️ Bulut yedeği başarısız: {e}")
 
-# Veriyi bu güncel fonksiyonla çekiyoruz
+# Bu satır save_data fonksiyonunun dışında, en altta kalmalı
 df = load_data()
 
 # --- 3. ANA PANEL ---
