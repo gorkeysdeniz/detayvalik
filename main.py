@@ -5,6 +5,14 @@ from datetime import datetime, timedelta
 import calendar
 import urllib.parse
 
+def finans_kart_olustur(baslik, deger, renk="#1E293B"):
+    st.markdown(f"""
+        <div style="background-color: {renk}; padding: 22px; border-radius: 18px; text-align: center; margin-bottom: 15px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2); border: 1px solid rgba(255,255,255,0.1);">
+            <p style="margin: 0; font-size: 13px; color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;">{baslik}</p>
+            <h2 style="margin: 5px 0 0 0; font-size: 32px; color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; font-weight: 900; letter-spacing: -1px;">{deger}</h2>
+        </div>
+    """, unsafe_allow_html=True)
+
 
 
 # ---  (Fonksiyon Tanımı) ---
@@ -299,69 +307,73 @@ with t_rez:
                     save_data(df)
                     st.rerun()
 
-# --- TAB 3: FİNANSAL TABLO (v42.6.3 İSKELET UYUMLU) ---
+# --- TAB 3: FİNANSAL TABLO (PROFESYONEL GÖRÜNÜM) ---
 with t_fin:
     st.subheader(f"💰 {sec_ay} Finansal Analizi")
     
-    # 1. GİDER DOSYASI KONTROLÜ
+    # 1. Gider Dosyası Kontrolü & Veri Yükleme
     GIDER_FILE = "gider.csv"
-    COL_GIDER = ["Tarih", "Kategori", "Aciklama", "Tutar"]
     if not os.path.exists(GIDER_FILE):
-        pd.DataFrame(columns=COL_GIDER).to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+        pd.DataFrame(columns=["Tarih", "Kategori", "Aciklama", "Tutar"]).to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
     
     try:
-        df_gider_raw = pd.read_csv(GIDER_FILE, sep=';', encoding='utf-8-sig')
-        # Sütunları zorla doğrula
-        for col in COL_GIDER:
-            if col not in df_gider_raw.columns: df_gider_raw[col] = 0 if col == "Tutar" else ""
+        df_gider = pd.read_csv(GIDER_FILE, sep=';', encoding='utf-8-sig')
     except:
-        df_gider_raw = pd.DataFrame(columns=COL_GIDER)
+        df_gider = pd.DataFrame(columns=["Tarih", "Kategori", "Aciklama", "Tutar"])
 
-    # 2. HESAPLAMALAR
+    # 2. Hesaplamalar
     # Gelir: Takvimdeki o ayın toplam cirosu
     m_rez_fin = df[pd.to_datetime(df['Tarih'], errors='coerce').dt.month == ay_idx]
     brut_gelir = m_rez_fin.drop_duplicates(["Ad Soyad", "Toplam"])["Toplam"].sum()
-    vergi_yukü = brut_gelir * 0.12 # %10 KDV + %2 Konaklama
+    vergi_yukü = brut_gelir * 0.12 # %12 Vergi Tahmini
     
     # Gider: Gider dosyasındaki o ayın toplamı
-    df_gider_raw['Tarih_DT'] = pd.to_datetime(df_gider_raw['Tarih'], errors='coerce')
-    m_gider_fin = df_gider_raw[df_gider_raw['Tarih_DT'].dt.month == ay_idx]
+    df_gider['Tarih_DT'] = pd.to_datetime(df_gider['Tarih'], errors='coerce')
+    m_gider_fin = df_gider[df_gider['Tarih_DT'].dt.month == ay_idx]
     toplam_gider_tl = m_gider_fin["Tutar"].sum()
     
     net_kar_tl = brut_gelir - vergi_yukü - toplam_gider_tl
 
-    # 3. GÖRSEL PANEL (İskelet Tasarımıyla Aynı)
-    # HER İKİ MODDA DA (AYDINLIK/KARANLIK) CAM GİBİ OKUNAN KUTU
-    st.markdown(f"""
-        <div style="
-            background-color: #262730; 
-            padding: 25px; 
-            border-radius: 15px; 
-            text-align: center; 
-            margin-top: 20px; 
-            border: 1px solid #464855;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        ">
-            <small style="
-                color: #A1A1AA; 
-                font-weight: 800; 
-                letter-spacing: 1.5px; 
-                text-transform: uppercase;
-                display: block;
-                margin-bottom: 5px;
-            ">BU AYIN NET KARI</small>
-            <h2 style="
-                margin: 0; 
-                color: #10b981 !important; 
-                font-size: 36px; 
-                font-weight: 900;
-                -webkit-text-fill-color: #10b981 !important;
-            ">{net_kar_tl:,.0f} TL</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    # 3. KESKİN VE KALIN YAZILI FİNANS KARTLARI
+    # Col1 ve Col2 içinde ayrı ayrı gösterim
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        finans_kart_olustur("BRÜT GELİR", f"{brut_gelir:,.0f} TL", "#1E293B")
+        finans_kart_olustur("GİDER TOPLAMI", f"-{toplam_gider_tl:,.0f} TL", "#EF4444")
+        
+    with c2:
+        finans_kart_olustur("VERGİ TAHMİNİ (%12)", f"-{vergi_yukü:,.0f} TL", "#334155")
+        # NET KAR KUTUSU - DAHA BÜYÜK VE YEŞİL
+        finans_kart_olustur("BU AYIN NET KARI", f"{net_kar_tl:,.0f} TL", "#10B981")
 
     st.divider()
 
+    # 4. GİDER GİRİŞ FORMU
+    st.subheader("🧾 Gider Ekle")
+    with st.form("finans_gider_yeni_v4", clear_on_submit=True):
+        col_g1, col_g2, col_g3 = st.columns([1, 2, 1])
+        g_tarih = col_g1.date_input("Tarih", key="fin_g_date")
+        g_aciklama = col_g2.text_input("Açıklama (Elektrik, Su, Market vb.)", key="fin_g_desc")
+        g_tutar = col_g3.number_input("Tutar (TL)", min_value=0, key="fin_g_val")
+        
+        if st.form_submit_button("💰 GİDERİ KAYDET"):
+            yeni_gider = pd.DataFrame([{
+                "Tarih": g_tarih.strftime("%Y-%m-%d"),
+                "Kategori": "Genel",
+                "Aciklama": g_aciklama,
+                "Tutar": g_tutar
+            }])
+            # Kaydet ve Yenile
+            df_gider_save = pd.concat([df_gider.drop(columns=['Tarih_DT'], errors='ignore'), yeni_gider], ignore_index=True)
+            df_gider_save.to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+            st.success("Gider başarıyla kaydedildi!")
+            st.rerun()
+
+    # 5. AYIN GİDER LİSTESİ
+    if not m_gider_fin.empty:
+        st.write(f"### 📋 {sec_ay} Gider Detayları")
+        st.dataframe(m_gider_fin[['Tarih', 'Aciklama', 'Tutar']], use_container_width=True, hide_index=True)
     # 4. GİDER GİRİŞ FORMU (Duplicate ID Korunmuş)
     st.subheader("🧾 Gider Ekle")
     with st.form("finans_gider_formu_v1", clear_on_submit=True):
