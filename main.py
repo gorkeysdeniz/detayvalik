@@ -102,8 +102,12 @@ def save_data(df_to_save):
     try:
         df_to_save.to_csv(REZ_FILE, index=False, sep=',', encoding='utf-8-sig')
         st.sidebar.success("✅ Yerel dosya güncellendi.")
-    except Exception as e:
-        st.sidebar.error(f"❌ Yerel yazma hatası: {e}")
+   except Exception as e:
+        # st.toast yerine st.error kullanıyoruz ki hata ekranda kalsın
+        st.error(f"🚨 KRİTİK HATA: {e}")
+        st.info("Lütfen bu hatayı kopyalayıp bana gönder.")
+        # Programın burada durup hatayı göstermesi için:
+        st.stop()
 
     # 2. ADIM: GitHub'a Göndermeyi Dene
     try:
