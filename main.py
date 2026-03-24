@@ -1,11 +1,14 @@
 import streamlit as st
 import pandas as pd
 import os
-REZ_FILE = os.path.join(os.getcwd(), 'rez.csv')
 from datetime import datetime, timedelta
 import calendar
 import urllib.parse
-from github import Github
+from github import Github  # <--- BURASI: 'Github' eklenmeli
+
+# Dosya yolunu tanımlayalım
+REZ_FILE = "rez.csv"
+COL_REZ = ["Tarih", "Ad Soyad", "Tel", "Ucret", "Gece", "Not", "Durum", "Toplam", "Kapora"]
 
 
 def finans_kart_olustur(baslik, deger, renk="#1E293B"):
@@ -88,51 +91,48 @@ COL_REZ = ["Tarih", "Ad Soyad", "Tel", "Ucret", "Gece", "Not", "Durum", "Toplam"
 
 def load_data():
     if not os.path.exists(REZ_FILE):
-        # Dosya yoksa başlıklarla yeni bir tane oluştur
-        return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
+        return pd.DataFrame(columns=COL_REZ)
     try:
-        # Dosyayı oku
+        # Buradaki sep=',' olduğundan emin ol
         return pd.read_csv(REZ_FILE, sep=',', encoding='utf-8-sig')
     except:
-        # Hata varsa boş dön
-        return pd.DataFrame(columns=['Tarih', 'Ad Soyad', 'Tel', 'Ucret', 'Gece', 'Not', 'Durum', 'Toplam', 'Kapora'])
+        return pd.DataFrame(columns=COL_REZ)
         
 def save_data(df_to_save):
-    # 1. ADIM: Yerel Dosyaya Yaz (Yazma işlemini garantiye al)
+    # --- YEREL KAYIT ---
     try:
         full_path = os.path.abspath(REZ_FILE)
         df_to_save.to_csv(full_path, index=False, sep=',', encoding='utf-8-sig')
     except Exception as e:
         st.error(f"Yerel kayıt hatası: {e}")
 
-    # 2. ADIM: GitHub Yedekleme (Düzgün Hizalanmış)
+    # --- GITHUB YEDEKLEME ---
     try:
         token = st.secrets["GITHUB_TOKEN"]
         repo_name = st.secrets["GITHUB_REPO"]
         
         g = Github(token)
-        g.get_repo(repo_name)
+        # Burası çok önemli: 'repo' değişkenine atama yapıyoruz
+        repo = g.get_repo(repo_name) 
         
-        # CSV içeriğini hazırla
         content = df_to_save.to_csv(index=False, sep=',', encoding='utf-8-sig')
         
         try:
-            # Önce GitHub'da dosyayı bul ve güncelle
+            # Önce mevcut dosyayı bul ve güncelle
             contents = repo.get_contents("rez.csv")
             repo.update_file(contents.path, "🔄 Rezervasyon Güncellendi", content, contents.sha)
             st.toast("☁️ GitHub yedeği başarılı!", icon="✅")
             st.rerun() 
-        except:
-            # Dosya GitHub'da yoksa (404), YENİDEN OLUŞTUR
+        except Exception:
+            # Dosya yoksa sıfırdan oluştur
             repo.create_file("rez.csv", "🆕 İlk Dosya Oluşturuldu", content)
             st.toast("🚀 Yeni dosya GitHub'da oluşturuldu!", icon="✨")
             st.rerun()
             
     except Exception as e:
-        # Hata olursa ekranda kalsın, ne olduğunu görelim
-        st.warning(f"⚠️ Bulut yedeği başarısız: {e}")
-
-# DİKKAT: Bu satır fonksiyonun DIŞINDA olmalı (en solda)
+        # Hata varsa burada açıkça göreceğiz
+        st.warning(f"⚠️ GitHub Hatası: {e}")
+        
 df = load_data()
 
 
