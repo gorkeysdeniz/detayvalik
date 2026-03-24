@@ -132,6 +132,32 @@ def save_data(df_to_save):
     except Exception as e:
         # Hata varsa burada açıkça göreceğiz
         st.warning(f"⚠️ GitHub Hatası: {e}")
+        def save_gider_data(df_gider_to_save):
+    GIDER_FILE = "gider.csv"
+    # --- YEREL KAYIT ---
+    try:
+        df_gider_to_save.to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+    except Exception as e:
+        st.error(f"Gider yerel kayıt hatası: {e}")
+
+    # --- GITHUB YEDEKLEME ---
+    try:
+        token = st.secrets["GITHUB_TOKEN"]
+        repo_name = st.secrets["GITHUB_REPO"]
+        g = Github(token)
+        repo = g.get_repo(repo_name) 
+        content = df_gider_to_save.to_csv(index=False, sep=';', encoding='utf-8-sig')
+        
+        try:
+            contents = repo.get_contents("gider.csv")
+            repo.update_file(contents.path, "💰 Giderler Güncellendi", content, contents.sha)
+            st.toast("☁️ Gider yedeği başarılı!", icon="💰")
+        except:
+            repo.create_file("gider.csv", "🆕 Gider Dosyası Oluşturuldu", content)
+            st.toast("🚀 Gider dosyası GitHub'da oluşturuldu!", icon="✨")
+    except Exception as e:
+        st.warning(f"⚠️ Gider GitHub Hatası: {e}")
+        
         
 df = load_data()
 
@@ -433,12 +459,16 @@ with t_fin:
                 "Aciklama": g_aciklama,
                 "Tutar": g_tutar
             }])
-            # Kaydet ve Yenile
+            
+            # Mevcut giderlerle yeniyi birleştir
             df_gider_save = pd.concat([df_gider.drop(columns=['Tarih_DT'], errors='ignore'), yeni_gider], ignore_index=True)
-            df_gider_save.to_csv(GIDER_FILE, index=False, sep=';', encoding='utf-8-sig')
+            
+            # YUKARIDA TANIMLADIĞIMIZ FONKSİYONU ÇAĞIRIYORUZ
+            save_gider_data(df_gider_save)
+            
             st.success("Gider başarıyla kaydedildi!")
             st.rerun()
-
+            
     # 5. AYIN GİDER LİSTESİ
     if not m_gider_fin.empty:
         st.write(f"### 📋 {sec_ay} Gider Detayları")
